@@ -61,13 +61,12 @@ jobs:
             --report-format=sarif \
             --report-path=gitleaks-results.sarif \
             --verbose \
-            --redact || true
+            --redact
 
       # Subida de alertas a GitHub Security Center
       - name: Subir resultados SARIF a GitHub Code Scanning
         if: always()
         uses: github/codeql-action/upload-sarif@v3
-        continue-on-error: true
         with:
           sarif_file: gitleaks-results.sarif
           category: gitleaks
