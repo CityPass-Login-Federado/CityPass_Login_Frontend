@@ -7,8 +7,12 @@ on:
   push:
     branches: [ "main", "develop" ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  NODE_VERSION: "20"
+  NODE_VERSION: "22"
 
 permissions:
   contents: read
@@ -30,13 +34,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
 
       # Instala dependencias solo si existe package.json
       - name: Install dependencies
         run: |
           if [ -f package.json ]; then
-            npm ci
+            npm install
           else
             echo "No package.json found yet. Skipping dependency install."
           fi
