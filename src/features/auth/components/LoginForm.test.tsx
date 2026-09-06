@@ -55,7 +55,7 @@ describe('LoginForm Component', () => {
 
   test('llama a la mutación con los datos correctos si el formulario es válido', async () => {
     const user = userEvent.setup();
-    import.meta.env.VITE_CLIENT_ID = 'test-client';
+    (import.meta.env as any).VITE_CLIENT_ID = 'test-client';
 
     renderLoginForm();
 
