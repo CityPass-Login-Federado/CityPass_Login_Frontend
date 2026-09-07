@@ -1,12 +1,12 @@
 ## To do (Sprint 0 - Sprint 2):
 - [x] Definir stack tecnológico Frontend (ADRs F001 al F004 documentados)
 - [x] Inicializar estructura de carpetas base (Feature-Driven)
-- [ ] Configurar Vite + React + TypeScript + Tailwind CSS
-- [ ] Integrar Shadcn UI y componentes base
-- [ ] Generar cliente HTTP (Axios) sincronizado con el OpenAPI/Swagger del Backend
+- [x] Configurar Vite + React + TypeScript + Tailwind CSS
+- [x] Integrar Shadcn UI y componentes base
+- [x] Generar cliente HTTP (Axios) sincronizado con el OpenAPI/Swagger del Backend
 - [ ] Implementar interceptores HTTP para inyectar Access Token y manejar errores 401
 - [ ] Lógica de rotación transparente del Refresh Token
-- [ ] Maquetar pantalla de Login (cumpliendo 10 pts de UX/UI)
+- [x] Maquetar pantalla de Login (cumpliendo 10 pts de UX/UI)
 - [ ] Tests de componentes con Vitest + RTL (0% cobertura actual, rúbrica pide 60%)
 - [ ] Dockerizar SPA con Nginx (Dockerfile multi-stage)
 - [ ] CI/CD con GitHub Actions (Build & Test)
