@@ -33,6 +33,10 @@ describe('LoginForm Component', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   test('renderiza el formulario correctamente', () => {
     renderLoginForm();
     expect(screen.getByRole('heading', { name: /ingrese a su cuenta/i })).toBeInTheDocument();
@@ -55,7 +59,7 @@ describe('LoginForm Component', () => {
 
   test('llama a la mutación con los datos correctos si el formulario es válido', async () => {
     const user = userEvent.setup();
-    (import.meta.env as any).VITE_CLIENT_ID = 'test-client';
+    vi.stubEnv('VITE_CLIENT_ID', 'test-client');
 
     renderLoginForm();
 
