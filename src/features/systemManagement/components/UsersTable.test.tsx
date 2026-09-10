@@ -54,4 +54,14 @@ describe('UsersTable', () => {
     expect(screen.getByText('No disponible')).toBeInTheDocument();
     expect(screen.queryByText('Sin grupo')).not.toBeInTheDocument();
   });
+
+  test('usa una papelera para la acción de deshabilitar', () => {
+    renderTable(false);
+
+    const disableButton = screen.getByRole('button', {
+      name: 'Deshabilitar a Juan Pérez',
+    });
+
+    expect(disableButton.querySelector('.lucide-trash2')).toBeInTheDocument();
+  });
 });

@@ -1,4 +1,4 @@
-import { Ban, Pencil, RotateCcw } from 'lucide-react';
+import { Pencil, RotateCcw, Trash2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -115,7 +115,7 @@ export const UsersTable = ({
                     {person.disabled ? (
                       <RotateCcw className="h-4 w-4" />
                     ) : (
-                      <Ban className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     )}
                   </Button>
                 </div>
