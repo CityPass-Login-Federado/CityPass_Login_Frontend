@@ -8,6 +8,7 @@ import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { UnauthorizedPage } from '@/features/auth/components/UnauthorizedPage';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { SystemManagementPage } from '@/features/systemManagement/components/SystemManagementPage';
+import { UsersManagementPage } from '@/features/systemManagement/components/UsersManagementPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,6 +38,14 @@ export const App = () => {
               element={
                 <AppErrorBoundary>
                   <SystemManagementPage />
+                </AppErrorBoundary>
+              }
+            />
+            <Route
+              path="/panel/users"
+              element={
+                <AppErrorBoundary>
+                  <UsersManagementPage />
                 </AppErrorBoundary>
               }
             />
