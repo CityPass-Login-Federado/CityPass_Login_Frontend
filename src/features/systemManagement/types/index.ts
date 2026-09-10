@@ -99,5 +99,5 @@ export interface PanelApiError {
 
 export type PersonStatusFilter = 'all' | 'active' | 'inactive';
 
-export type NoticeKind = 'success' | 'error';
+export type NoticeKind = 'success' | 'error' | 'warning';
 export type NoticeHandler = (kind: NoticeKind, message: string) => void;

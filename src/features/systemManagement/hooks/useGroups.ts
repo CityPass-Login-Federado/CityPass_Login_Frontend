@@ -17,12 +17,20 @@ import {
   type GroupListParams,
   type RemoveGroupMemberRequest,
 } from '../types';
+import {
+  reconcileGroups,
+  reconcilePeopleAndGroups,
+} from '../utils/cacheReconciliation';
 import { panelQueryKeys } from '../utils/queryKeys';
 
-export const useGroups = (params: GroupListParams) =>
+export const useGroups = (
+  params: GroupListParams,
+  { enabled = true }: { enabled?: boolean } = {},
+) =>
   useQuery({
     queryKey: panelQueryKeys.groupsList(params),
     queryFn: () => fetchGroups(params),
+    enabled,
     placeholderData: keepPreviousData,
   });
 
@@ -31,8 +39,7 @@ export const useCreateGroup = () => {
 
   return useMutation({
     mutationFn: (data: CreateGroupRequest) => createGroup(data),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: panelQueryKeys.groups() }),
+    onSettled: () => reconcileGroups(queryClient),
   });
 };
 
@@ -41,12 +48,7 @@ export const useAssignUserToGroup = () => {
 
   return useMutation({
     mutationFn: (data: AssignUserToGroupRequest) => addUserToGroup(data),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: panelQueryKeys.people() }),
-        queryClient.invalidateQueries({ queryKey: panelQueryKeys.groups() }),
-      ]);
-    },
+    onSettled: () => reconcilePeopleAndGroups(queryClient),
   });
 };
 
@@ -56,11 +58,6 @@ export const useRemoveUserFromGroup = () => {
   return useMutation({
     mutationFn: (data: RemoveGroupMemberRequest) =>
       removeUserFromGroup(data),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: panelQueryKeys.people() }),
-        queryClient.invalidateQueries({ queryKey: panelQueryKeys.groups() }),
-      ]);
-    },
+    onSettled: () => reconcilePeopleAndGroups(queryClient),
   });
 };

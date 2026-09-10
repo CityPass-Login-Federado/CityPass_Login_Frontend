@@ -1,4 +1,4 @@
-import { Pencil, RotateCcw, Trash2 } from 'lucide-react';
+import { Ban, Pencil, RotateCcw } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import { getModuleName } from '../utils/modules';
 interface UsersTableProps {
   people: PanelPerson[];
   groupNamesByUser: Map<string, string[]>;
+  groupDataStatus: 'loading' | 'ready' | 'error';
   isGeneralAdmin: boolean;
   onEdit: (person: PanelPerson) => void;
   onChangeStatus: (person: PanelPerson) => void;
@@ -25,6 +26,7 @@ interface UsersTableProps {
 export const UsersTable = ({
   people,
   groupNamesByUser,
+  groupDataStatus,
   isGeneralAdmin,
   onEdit,
   onChangeStatus,
@@ -46,6 +48,14 @@ export const UsersTable = ({
       <TableBody>
         {people.map((person) => {
           const groups = groupNamesByUser.get(person.uid) ?? [];
+          const groupLabel =
+            groupDataStatus === 'loading'
+              ? 'Cargando grupos…'
+              : groupDataStatus === 'error'
+                ? 'No disponible'
+                : groups.length
+                  ? groups.join(', ')
+                  : 'Sin grupo';
           return (
             <TableRow key={person.employeeNumber}>
               <TableCell>
@@ -57,9 +67,13 @@ export const UsersTable = ({
               <TableCell className="text-muted-foreground">
                 {person.email}
               </TableCell>
-              <TableCell title={groups.join(', ')}>
+              <TableCell
+                title={
+                  groupDataStatus === 'ready' ? groups.join(', ') : undefined
+                }
+              >
                 <span className="block max-w-48 truncate">
-                  {groups.length ? groups.join(', ') : 'Sin grupo'}
+                  {groupLabel}
                 </span>
               </TableCell>
               {isGeneralAdmin && (
@@ -101,7 +115,7 @@ export const UsersTable = ({
                     {person.disabled ? (
                       <RotateCcw className="h-4 w-4" />
                     ) : (
-                      <Trash2 className="h-4 w-4" />
+                      <Ban className="h-4 w-4" />
                     )}
                   </Button>
                 </div>

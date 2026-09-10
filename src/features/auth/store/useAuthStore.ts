@@ -40,6 +40,7 @@ export const selectIsGeneralAdmin = (state: AuthState) =>
 export const selectCanAccessPanel = (state: AuthState) => {
   if (!state.session) return false;
   if (state.session.adminScope === 'GENERAL') return true;
+  if (!state.session.module?.trim()) return false;
 
   return state.session.groups.some(
     (group) => group.trim().toLowerCase() === 'delegados',

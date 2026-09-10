@@ -66,6 +66,11 @@ export const UsersSection = ({
     module: selectedModule,
   });
   const statusMutation = useSetPersonStatus();
+  const groupDataStatus = groupsQuery.isError
+    ? 'error'
+    : groupsQuery.isPending || groupsQuery.isPlaceholderData
+      ? 'loading'
+        : 'ready';
 
   const groupNamesByUser = useMemo(() => {
     const membership = new Map<string, string[]>();
@@ -131,6 +136,7 @@ export const UsersSection = ({
             status={status}
             module={module}
             groups={groupsQuery.data?.content ?? []}
+            isGroupFilterDisabled={groupDataStatus !== 'ready'}
             isGeneralAdmin={isGeneralAdmin}
             onSearchChange={(value) =>
               handleFilterChange(() => setSearch(value))
@@ -142,12 +148,25 @@ export const UsersSection = ({
               handleFilterChange(() => setStatus(value))
             }
             onModuleChange={(value) =>
-              handleFilterChange(() => setModule(value))
+              handleFilterChange(() => {
+                setModule(value);
+                setGroup('all');
+              })
             }
             onAddUser={handleAddPerson}
           />
 
-          {peopleQuery.isPending ? (
+          {groupsQuery.isError && (
+            <p
+              role="alert"
+              className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+            >
+              No se pudieron cargar los grupos. El filtro y la columna de grupos
+              permanecerán deshabilitados hasta recuperar esos datos.
+            </p>
+          )}
+
+          {peopleQuery.isPending || peopleQuery.isPlaceholderData ? (
             <SectionLoading />
           ) : peopleQuery.isError ? (
             <SectionError
@@ -163,6 +182,7 @@ export const UsersSection = ({
               <UsersTable
                 people={peopleQuery.data.content}
                 groupNamesByUser={groupNamesByUser}
+                groupDataStatus={groupDataStatus}
                 isGeneralAdmin={isGeneralAdmin}
                 onEdit={handleEditPerson}
                 onChangeStatus={setStatusPerson}

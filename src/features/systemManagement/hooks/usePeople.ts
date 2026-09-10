@@ -17,12 +17,17 @@ import {
   type PersonStatusVariables,
   type UpdatePersonVariables,
 } from '../types';
+import { reconcilePeopleAndGroups } from '../utils/cacheReconciliation';
 import { panelQueryKeys } from '../utils/queryKeys';
 
-export const usePeople = (params: PeopleListParams) =>
+export const usePeople = (
+  params: PeopleListParams,
+  { enabled = true }: { enabled?: boolean } = {},
+) =>
   useQuery({
     queryKey: panelQueryKeys.peopleList(params),
     queryFn: () => fetchPeople(params),
+    enabled,
     placeholderData: keepPreviousData,
   });
 
@@ -31,8 +36,7 @@ export const useCreatePerson = () => {
 
   return useMutation({
     mutationFn: (data: CreatePersonRequest) => createPerson(data),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: panelQueryKeys.people() }),
+    onSettled: () => reconcilePeopleAndGroups(queryClient),
   });
 };
 
@@ -41,8 +45,7 @@ export const useUpdatePerson = () => {
 
   return useMutation({
     mutationFn: (variables: UpdatePersonVariables) => updatePerson(variables),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: panelQueryKeys.people() }),
+    onSettled: () => reconcilePeopleAndGroups(queryClient),
   });
 };
 
@@ -52,7 +55,6 @@ export const useSetPersonStatus = () => {
   return useMutation({
     mutationFn: (variables: PersonStatusVariables) =>
       setPersonDisabled(variables),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: panelQueryKeys.people() }),
+    onSettled: () => reconcilePeopleAndGroups(queryClient),
   });
 };

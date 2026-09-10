@@ -44,8 +44,15 @@ export const AssignUserToGroupCard = ({
   });
   const moduleId = watch('moduleId');
   const selectedModule = isGeneralAdmin && moduleId ? moduleId : undefined;
-  const peopleQuery = usePeople({ page: 0, size: 1000, module: selectedModule });
-  const groupsQuery = useGroups({ page: 0, size: 1000, module: selectedModule });
+  const shouldLoadOptions = !isGeneralAdmin || Boolean(selectedModule);
+  const peopleQuery = usePeople(
+    { page: 0, size: 1000, module: selectedModule },
+    { enabled: shouldLoadOptions },
+  );
+  const groupsQuery = useGroups(
+    { page: 0, size: 1000, module: selectedModule },
+    { enabled: shouldLoadOptions },
+  );
   const mutation = useAssignUserToGroup();
 
   const handleFormSubmit = (values: AssignmentFormValues) => {
@@ -62,10 +69,10 @@ export const AssignUserToGroupCard = ({
       },
       {
         onSuccess: (response) => {
-          const warning = response.warnings.length
-            ? ` ${response.warnings.join(' ')}`
-            : '';
-          onNotice('success', `Usuario asignado correctamente.${warning}`);
+          onNotice('success', 'Usuario asignado correctamente.');
+          if (response.warnings.length) {
+            onNotice('warning', response.warnings.join(' '));
+          }
           reset({ moduleId: values.moduleId, userId: '', groupName: '' });
         },
         onError: (error) =>
@@ -77,8 +84,14 @@ export const AssignUserToGroupCard = ({
     );
   };
 
-  const isLoading = peopleQuery.isPending || groupsQuery.isPending;
-  const hasLoadError = peopleQuery.isError || groupsQuery.isError;
+  const isLoading =
+    shouldLoadOptions &&
+    (peopleQuery.isPending ||
+      peopleQuery.isPlaceholderData ||
+      groupsQuery.isPending ||
+      groupsQuery.isPlaceholderData);
+  const hasLoadError =
+    shouldLoadOptions && (peopleQuery.isError || groupsQuery.isError);
 
   return (
     <section id="assignment" aria-labelledby="assignment-title">
@@ -143,7 +156,13 @@ export const AssignUserToGroupCard = ({
                   >
                     <SelectTrigger aria-label="Seleccionar usuario">
                       <SelectValue
-                        placeholder={isLoading ? 'Cargando…' : 'Buscar usuario…'}
+                        placeholder={
+                          !shouldLoadOptions
+                            ? 'Seleccione un módulo primero…'
+                            : isLoading
+                              ? 'Cargando…'
+                              : 'Buscar usuario…'
+                        }
                       />
                     </SelectTrigger>
                     <SelectContent>
@@ -177,7 +196,13 @@ export const AssignUserToGroupCard = ({
                   >
                     <SelectTrigger aria-label="Seleccionar grupo">
                       <SelectValue
-                        placeholder={isLoading ? 'Cargando…' : 'Elegir un grupo…'}
+                        placeholder={
+                          !shouldLoadOptions
+                            ? 'Seleccione un módulo primero…'
+                            : isLoading
+                              ? 'Cargando…'
+                              : 'Elegir un grupo…'
+                        }
                       />
                     </SelectTrigger>
                     <SelectContent>
@@ -201,7 +226,12 @@ export const AssignUserToGroupCard = ({
             <Button
               type="submit"
               className="w-full"
-              disabled={isLoading || hasLoadError || mutation.isPending}
+              disabled={
+                !shouldLoadOptions ||
+                isLoading ||
+                hasLoadError ||
+                mutation.isPending
+              }
             >
               {mutation.isPending ? 'Asignando…' : 'Asignar a grupo'}
             </Button>

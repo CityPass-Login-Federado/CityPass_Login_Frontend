@@ -14,11 +14,15 @@ const person: PanelPerson = {
   module: 'reclamos',
 };
 
-const renderTable = (isGeneralAdmin: boolean) =>
+const renderTable = (
+  isGeneralAdmin: boolean,
+  groupDataStatus: 'loading' | 'ready' | 'error' = 'ready',
+) =>
   render(
     <UsersTable
       people={[person]}
       groupNamesByUser={new Map([['jperez', ['soporte-n2']]])}
+      groupDataStatus={groupDataStatus}
       isGeneralAdmin={isGeneralAdmin}
       onEdit={vi.fn()}
       onChangeStatus={vi.fn()}
@@ -42,5 +46,12 @@ describe('UsersTable', () => {
       screen.getByRole('columnheader', { name: 'Módulo' }),
     ).toBeInTheDocument();
     expect(screen.getByText('Reclamos')).toBeInTheDocument();
+  });
+
+  test('no informa falsamente que el usuario está sin grupo si falla esa consulta', () => {
+    renderTable(false, 'error');
+
+    expect(screen.getByText('No disponible')).toBeInTheDocument();
+    expect(screen.queryByText('Sin grupo')).not.toBeInTheDocument();
   });
 });

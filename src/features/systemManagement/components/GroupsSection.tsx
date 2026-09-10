@@ -46,9 +46,7 @@ export const GroupsSection = ({
           </CardTitle>
           <Button
             type="button"
-            variant="outline"
             size="sm"
-            className="border-primary text-primary"
             onClick={() => setIsCreateOpen(true)}
           >
             <Plus className="mr-1.5 h-4 w-4" />
