@@ -93,6 +93,7 @@ jobs:
             -Dsonar.test.inclusions="src/**/*.test.{ts,tsx}" \
             -Dsonar.exclusions="dist/**,coverage/**,node_modules/**,src/**/*.d.ts" \
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.qualitygate.wait=true
 
   secret-scanning:
     name: Secret Scanning (Gitleaks)
