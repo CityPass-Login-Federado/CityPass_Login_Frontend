@@ -13,20 +13,7 @@ import { panelQueryKeys } from './queryKeys';
 import { reconcileGroups, reconcilePeopleAndGroups } from './cacheReconciliation';
 import { useGroups } from '../hooks/useGroups';
 import { usePeople } from '../hooks/usePeople';
-import {
-  addUserToGroup,
-  createGroup,
-  createPerson,
-  fetchGroups,
-  fetchPeople,
-  removeUserFromGroup,
-  setPersonDisabled,
-  updatePerson,
-} from '../api/panelApi';
-
-const createQueryClient = () => ({
-  invalidateQueries: async ({ queryKey }: { queryKey: unknown[] }) => queryKey,
-});
+import { fetchGroups, fetchPeople } from '../api/panelApi';
 
 vi.mock('../api/panelApi', () => ({
   fetchPeople: vi.fn(),
@@ -49,7 +36,7 @@ describe('system management utils', () => {
       {
         data: { message: 'Credenciales inválidas' },
         status: 400,
-      } as any,
+      } as Parameters<typeof AxiosError>[0],
     );
 
     expect(getPanelErrorMessage(error, 'fallback')).toBe('Credenciales inválidas');
@@ -60,7 +47,10 @@ describe('system management utils', () => {
     expect(getPanelErrorMessage(new AxiosError('bad', 'ERR_BAD_REQUEST'), 'fallback')).toBe('fallback');
     expect(
       getPanelErrorMessage(
-        new AxiosError('bad', 'ERR_BAD_REQUEST', undefined, undefined, { data: { other: true }, status: 400 } as any),
+        new AxiosError('bad', 'ERR_BAD_REQUEST', undefined, undefined, {
+          data: { other: true },
+          status: 400,
+        } as Record<string, unknown>),
         'fallback',
       ),
     ).toBe('fallback');
@@ -123,7 +113,6 @@ describe('system management utils', () => {
   });
 
   test('reconcile functions invalidan todas las consultas relevantes', async () => {
-    const queryClient = createQueryClient();
     const peopleSpy = vi.fn();
     const groupsSpy = vi.fn();
     const fakeClient = {
@@ -131,7 +120,7 @@ describe('system management utils', () => {
         if (queryKey[1] === 'people') peopleSpy(queryKey);
         if (queryKey[1] === 'groups') groupsSpy(queryKey);
       },
-    } as any;
+    } as Parameters<typeof reconcilePeopleAndGroups>[0];
 
     await reconcilePeopleAndGroups(fakeClient);
     await reconcileGroups(fakeClient);

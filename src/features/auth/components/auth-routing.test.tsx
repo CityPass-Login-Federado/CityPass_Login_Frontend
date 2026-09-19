@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import type { ErrorInfo } from 'react';
 import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { describe, expect, test, vi } from 'vitest';
 
@@ -147,7 +148,7 @@ describe('auth routing and boundaries', () => {
     const boundary = new AppErrorBoundary({ children: <div>child</div> });
 
     expect(() =>
-      boundary.componentDidCatch(new Error('boom'), { componentStack: 'stack' } as any),
+      boundary.componentDidCatch(new Error('boom'), { componentStack: 'stack' } as ErrorInfo),
     ).not.toThrow();
     expect(consoleSpy).toHaveBeenCalled();
   });

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, waitFor } from '@testing-library/react';
+import type { AxiosRequestConfig } from 'axios';
 import { createElement, useEffect } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, test, vi } from 'vitest';
@@ -89,14 +90,14 @@ describe('auth runtime branches', () => {
     const config = await axiosInstance.interceptors.request.handlers[0].fulfilled({
       url: '/panel/people',
       headers: {},
-    } as any);
+    } as AxiosRequestConfig);
 
     expect(config.headers.Authorization).toBe('Bearer abc123');
 
     const loginConfig = await axiosInstance.interceptors.request.handlers[0].fulfilled({
       url: '/auth/login',
       headers: {},
-    } as any);
+    } as AxiosRequestConfig);
 
     expect(loginConfig.headers.Authorization).toBeUndefined();
   });
@@ -114,7 +115,7 @@ describe('auth runtime branches', () => {
         token_type: 'Bearer',
         expires_in: 3600,
       },
-    } as any);
+    } as Awaited<ReturnType<typeof axiosInstance.post>>);
 
     await expect(
       loginApi.loginUser({ username: 'jperez', password: 'secret', clientId: 'client-1' }),
