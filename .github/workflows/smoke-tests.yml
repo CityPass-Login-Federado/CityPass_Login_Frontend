@@ -1,0 +1,43 @@
+name: Smoke Test (docker-compose)
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  smoke-test-docker:
+    name: Smoke Test with docker-compose
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
+
+      - name: Start stack with docker-compose
+        run: docker compose up -d --build --wait --timeout 120 || true
+
+      - name: Check running containers
+        run: |
+          docker compose ps -a
+          FAILED_CONTAINERS=$(docker compose ps -a -q | xargs -I {} docker inspect --format '{{.Name}} -> ExitCode: {{.State.ExitCode}}' {} | grep -v 'ExitCode: 0' || true)
+          if [ -n "$FAILED_CONTAINERS" ]; then
+            echo "ERROR: containers failed:"
+            echo "$FAILED_CONTAINERS"
+            exit 1
+          fi
+
+      - name: Verify HTTP health
+        run: |
+          curl --fail --silent --show-error http://localhost:5173/ | head -n 20
+          grep -qi "<html" <(curl --fail --silent --show-error http://localhost:5173/)
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop stack
+        if: always()
+        run: docker compose down -v

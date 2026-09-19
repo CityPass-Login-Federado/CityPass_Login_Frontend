@@ -1,0 +1,16 @@
+node_modules
+npm-debug.log
+.git
+.github
+coverage
+.vite
+.vscode
+.idea
+.DS_Store
+.gitignore
+Dockerfile
+README.md
+*.md
+
+# Keep the build output only when intentional
+# dist

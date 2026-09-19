@@ -1,0 +1,55 @@
+name: CD
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  publish-ghcr:
+    name: Publish frontend image to GHCR
+    if: github.ref_name == 'main' || startsWith(github.ref_name, 'release')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
+
+      - name: Login to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
+        with:
+          images: ghcr.io/citypass-login-federado/citypass-login-frontend
+          tags: |
+            type=ref,event=branch
+            type=sha,format=short,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=citypass-login-frontend
+            org.opencontainers.image.description=Frontend de CityPass Login
+            com.citypass.ci.workflow=${{ github.workflow }}
+            com.citypass.ci.run-id=${{ github.run_id }}
+            com.citypass.ci.run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            com.citypass.ci.branch=${{ github.ref_name }}
+            com.citypass.ci.commit=${{ github.sha }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
