@@ -68,6 +68,12 @@ jobs:
       - name: Generate coverage report for Sonar
         run: npm run test:coverage -- --run
 
+      - name: Set up Java 21 for SonarCloud
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - name: 🔎 Análisis SonarCloud
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -80,6 +86,7 @@ jobs:
             -Dsonar.projectKey="${SONAR_PROJECT_KEY}" \
             -Dsonar.organization="${SONAR_ORGANIZATION}" \
             -Dsonar.host.url="${SONAR_HOST_URL}" \
+            -Dsonar.token="${SONAR_TOKEN}" \
             -Dsonar.sources=src \
             -Dsonar.tests=src \
             -Dsonar.test.inclusions="src/**/*.test.{ts,tsx}" \
