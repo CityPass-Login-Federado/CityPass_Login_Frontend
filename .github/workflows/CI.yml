@@ -16,15 +16,14 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           fetch-depth: 0
 
       - name: Set up Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
 
       - name: Install dependencies
         run: npm install
@@ -54,15 +53,14 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           fetch-depth: 0
 
       - name: Set up Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
 
       - name: Install dependencies
         run: npm install
@@ -93,7 +91,7 @@ jobs:
 
       - name: Install Gitleaks
         run: |
-          wget --no-redirect --https-only https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz -O gitleaks.tar.gz
+          curl -fsSL https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz -o gitleaks.tar.gz
           tar -zxvf gitleaks.tar.gz
           sudo mv gitleaks /usr/local/bin/
 
@@ -108,7 +106,7 @@ jobs:
 
       - name: Upload SARIF results to GitHub code scanning
         if: always()
-        uses: github/codeql-action/upload-sarif@ed1a0fa18ac745d017ca370dd4ef08bba3b4f504
+        uses: github/codeql-action/upload-sarif@d8073367669608af8fbcc5f63dd0a0d52bb90cff
         with:
           sarif_file: gitleaks-results.sarif
           category: gitleaks
@@ -147,7 +145,7 @@ jobs:
 
       - name: Upload Trivy SARIF results
         if: always()
-        uses: github/codeql-action/upload-sarif@ed1a0fa18ac745d017ca370dd4ef08bba3b4f504
+        uses: github/codeql-action/upload-sarif@d8073367669608af8fbcc5f63dd0a0d52bb90cff
         with:
           sarif_file: trivy-iac-results.sarif
           category: trivy-iac
@@ -188,7 +186,7 @@ jobs:
 
       - name: Upload image SARIF results
         if: always()
-        uses: github/codeql-action/upload-sarif@ed1a0fa18ac745d017ca370dd4ef08bba3b4f504
+        uses: github/codeql-action/upload-sarif@d8073367669608af8fbcc5f63dd0a0d52bb90cff
         with:
           sarif_file: trivy-image-results.sarif
           category: trivy-image
