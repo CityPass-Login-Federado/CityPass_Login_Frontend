@@ -68,6 +68,15 @@ jobs:
       - name: Generate coverage report for Sonar
         run: npm run test:coverage -- --run
 
+      - name: Verify coverage
+        run: |
+          pwd
+          ls -lah coverage
+          test -f ./coverage/lcov.info
+          echo "LCOV encontrado:"
+          wc -l ./coverage/lcov.info
+          grep '^SF:' ./coverage/lcov.info | head -20
+
       - name: Set up Java 21 for SonarCloud
         uses: actions/setup-java@v4
         with:
@@ -91,7 +100,7 @@ jobs:
             -Dsonar.tests=src \
             -Dsonar.test.inclusions="src/**/*.test.ts,src/**/*.test.tsx" \
             -Dsonar.exclusions="dist/**,coverage/**,node_modules/**,src/**/*.d.ts" \
-            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.javascript.lcov.reportPaths=./coverage/lcov.info
 
   secret-scanning:
     name: Secret Scanning (Gitleaks)
