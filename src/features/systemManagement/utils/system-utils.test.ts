@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { createElement } from 'react';
-import { AxiosError } from 'axios';
+import { AxiosError, type AxiosResponse } from 'axios';
 import { describe, expect, test, vi } from 'vitest';
 
 import { getPanelErrorMessage } from './errors';
@@ -36,24 +36,33 @@ describe('system management utils', () => {
       {
         data: { message: 'Credenciales inválidas' },
         status: 400,
-      } as Parameters<typeof AxiosError>[0],
+        statusText: 'Bad Request',
+        headers: {},
+        config: { headers: {} },
+      } as AxiosResponse<{ message: string }>,
     );
 
     expect(getPanelErrorMessage(error, 'fallback')).toBe('Credenciales inválidas');
   });
 
   test('getPanelErrorMessage usa fallback para errores sin estructura', () => {
+    const errorWithUnexpectedShape = new AxiosError(
+      'bad',
+      'ERR_BAD_REQUEST',
+      undefined,
+      undefined,
+      {
+        data: { other: true },
+        status: 400,
+        statusText: 'Bad Request',
+        headers: {},
+        config: { headers: {} },
+      } as AxiosResponse<{ other: boolean }>,
+    );
+
     expect(getPanelErrorMessage(new Error('boom'), 'fallback')).toBe('fallback');
     expect(getPanelErrorMessage(new AxiosError('bad', 'ERR_BAD_REQUEST'), 'fallback')).toBe('fallback');
-    expect(
-      getPanelErrorMessage(
-        new AxiosError('bad', 'ERR_BAD_REQUEST', undefined, undefined, {
-          data: { other: true },
-          status: 400,
-        } as Record<string, unknown>),
-        'fallback',
-      ),
-    ).toBe('fallback');
+    expect(getPanelErrorMessage(errorWithUnexpectedShape, 'fallback')).toBe('fallback');
   });
 
   test('getUniqueGroupNames deduplica y ordena nombres', () => {

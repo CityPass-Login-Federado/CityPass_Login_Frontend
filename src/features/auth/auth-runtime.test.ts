@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, waitFor } from '@testing-library/react';
-import type { AxiosRequestConfig } from 'axios';
+import type { InternalAxiosRequestConfig } from 'axios';
 import { createElement, useEffect } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, test, vi } from 'vitest';
@@ -87,24 +87,38 @@ describe('auth runtime branches', () => {
     const token = 'abc123';
     localStorage.setItem('access_token', token);
 
-    const config = await axiosInstance.interceptors.request.handlers[0].fulfilled({
+    const requestHandlers = axiosInstance.interceptors.request.handlers ?? [];
+    const requestInterceptor = requestHandlers[0];
+    expect(requestInterceptor).toBeDefined();
+
+    const config = await requestInterceptor!.fulfilled({
       url: '/panel/people',
       headers: {},
-    } as AxiosRequestConfig);
+    } as InternalAxiosRequestConfig);
 
     expect(config.headers.Authorization).toBe('Bearer abc123');
 
-    const loginConfig = await axiosInstance.interceptors.request.handlers[0].fulfilled({
+    const loginConfig = await requestInterceptor!.fulfilled({
       url: '/auth/login',
       headers: {},
-    } as AxiosRequestConfig);
+    } as InternalAxiosRequestConfig);
 
     expect(loginConfig.headers.Authorization).toBeUndefined();
   });
 
   test('axios rechaza errores de request', async () => {
     const error = new Error('network');
-    await expect(axiosInstance.interceptors.response.handlers[0].rejected(error)).rejects.toBe(error);
+    const responseHandlers = axiosInstance.interceptors.response.handlers ?? [];
+    const responseInterceptor = responseHandlers[0];
+    expect(responseInterceptor).toBeDefined();
+    expect(responseInterceptor?.rejected).toBeTypeOf('function');
+
+    const rejected = responseInterceptor?.rejected;
+    if (!rejected) {
+      throw new Error('Response interceptor rejected handler is missing');
+    }
+
+    await expect(rejected(error)).rejects.toBe(error);
   });
 
   test('loginUser envía la petición de login y devuelve el payload', async () => {
