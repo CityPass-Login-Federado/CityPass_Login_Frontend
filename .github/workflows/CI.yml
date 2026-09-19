@@ -190,3 +190,4 @@ jobs:
         with:
           sarif_file: trivy-image-results.sarif
           category: trivy-image
+          if-no-files-found: ignore

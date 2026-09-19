@@ -16,9 +16,9 @@ RUN npm run build
 
 FROM nginx:1.27-alpine AS runtime
 
-RUN addgroup -S nginx && adduser -S -G nginx nginx \
-  && mkdir -p /var/cache/nginx /var/run/nginx /usr/share/nginx/html \
-  && chown -R nginx:nginx /var/cache/nginx /var/run/nginx /usr/share/nginx/html
+RUN mkdir -p /var/cache/nginx /var/run/nginx /usr/share/nginx/html \
+  && chown -R nginx:nginx /var/cache/nginx /var/run/nginx /usr/share/nginx/html \
+  && chmod 755 /usr/share/nginx/html
 
 COPY --chown=nginx:nginx --chmod=444 nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build --chown=nginx:nginx --chmod=444 /app/dist /usr/share/nginx/html
