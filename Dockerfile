@@ -16,9 +16,18 @@ RUN npm run build
 
 FROM nginx:1.27-alpine AS runtime
 
-RUN mkdir -p /usr/share/nginx/html /tmp/nginx \
-  && chown -R nginx:nginx /usr/share/nginx/html /tmp/nginx \
-  && chmod 755 /usr/share/nginx/html
+RUN mkdir -p \
+      /usr/share/nginx/html \
+      /tmp/nginx/client_temp \
+      /tmp/nginx/proxy_temp \
+      /tmp/nginx/fastcgi_temp \
+      /tmp/nginx/uwsgi_temp \
+      /tmp/nginx/scgi_temp \
+  && chown -R nginx:nginx \
+      /usr/share/nginx/html \
+      /tmp/nginx \
+  && chmod 755 /usr/share/nginx/html \
+  && chmod 700 /tmp/nginx
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY --from=build --chown=nginx:nginx --chmod=444 /app/dist /usr/share/nginx/html
