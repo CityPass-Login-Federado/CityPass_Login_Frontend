@@ -68,15 +68,6 @@ jobs:
       - name: Generate coverage report for Sonar
         run: npm run test:coverage -- --run
 
-      - name: Verify coverage
-        run: |
-          pwd
-          ls -lah coverage
-          test -f ./coverage/lcov.info
-          echo "LCOV encontrado:"
-          wc -l ./coverage/lcov.info
-          grep '^SF:' ./coverage/lcov.info | head -20
-
       - name: Set up Java 21 for SonarCloud
         uses: actions/setup-java@v4
         with:
