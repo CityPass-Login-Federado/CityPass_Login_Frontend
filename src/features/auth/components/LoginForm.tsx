@@ -11,7 +11,7 @@ import { loginSchema, type LoginFormValues } from '../utils/loginSchema';
 import { type ApiError, type LoginRequest } from '../types';
 
 import citypassLogo from '@/assets/citypass-logo.png';
-import loginIllustration from '@/assets/login-illustration.jpg';
+import login_illustration from '@/assets/login_illustration.svg';
 
 export const LoginForm = () => {
   const { mutate, isPending, isError, error } = useLogin();
@@ -51,7 +51,7 @@ export const LoginForm = () => {
     <main className="grid min-h-screen grid-cols-1 lg:grid-cols-[3fr_2fr]">
       <div className="hidden lg:block">
         <img
-          src={loginIllustration}
+          src={login_illustration}
           alt="Ciudad inteligente CityPass+"
           className="h-full w-full object-cover"
         />
