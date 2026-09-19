@@ -68,14 +68,23 @@ jobs:
       - name: Generate coverage report for Sonar
         run: npm run test:coverage -- --run
 
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@2f77a1ec69fb1d595b06f35ab27e97605bdef703
+      - name: 🔎 Análisis SonarCloud
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: 'https://sonarcloud.io'
-          SONAR_ORGANIZATION: 'citypass-login-federado'
-          SONAR_PROJECT_KEY: 'CityPass-Login-Federado_CityPass_Login_Backend'
+          SONAR_HOST_URL: https://sonarcloud.io
+          SONAR_ORGANIZATION: citypass-login-federado
+          SONAR_PROJECT_KEY: citypass-login-federado_citypass-login-frontend
+        run: |
+          npx sonar-scanner \
+            -Dsonar.projectKey="${SONAR_PROJECT_KEY}" \
+            -Dsonar.organization="${SONAR_ORGANIZATION}" \
+            -Dsonar.host.url="${SONAR_HOST_URL}" \
+            -Dsonar.sources=src \
+            -Dsonar.tests=src \
+            -Dsonar.test.inclusions="src/**/*.test.{ts,tsx}" \
+            -Dsonar.exclusions="dist/**,coverage/**,node_modules/**,src/**/*.d.ts" \
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
   secret-scanning:
     name: Secret Scanning (Gitleaks)
