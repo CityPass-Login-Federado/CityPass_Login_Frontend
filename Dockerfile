@@ -27,8 +27,6 @@ RUN find /usr/share/nginx/html -type d -exec chmod 555 {} + && \
     find /usr/share/nginx/html -type f -exec chmod 444 {} + && \
     chown -R nginx:nginx /usr/share/nginx/html
 
-USER nginx
-
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
