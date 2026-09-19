@@ -80,7 +80,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
           SONAR_ORGANIZATION: citypass-login-federado
-          SONAR_PROJECT_KEY: citypass-login-federado_citypass-login-frontend
+          SONAR_PROJECT_KEY: CityPass-Login-Federado_CityPass_Login_Frontend
         run: |
           npx sonar-scanner \
             -Dsonar.projectKey="${SONAR_PROJECT_KEY}" \
