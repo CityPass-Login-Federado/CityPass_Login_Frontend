@@ -15,9 +15,23 @@ export interface PanelPerson {
 
 export interface PanelGroup {
   name: string;
+  groupNumber?: string;
+  displayName?: string;
   members: string[];
   reserved: boolean;
+  disabled?: boolean;
   module?: string;
+}
+
+export interface UserSelectOption {
+  value: string;
+  label: string;
+  email?: string;
+}
+
+export interface GroupSelectOption {
+  value: string;
+  label: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -42,6 +56,7 @@ export interface GroupListParams {
   size: number;
   search?: string;
   reserved?: boolean;
+  disabled?: boolean;
   module?: string;
 }
 
@@ -77,7 +92,10 @@ export interface CreateGroupRequest {
 export interface AssignUserToGroupRequest {
   userId: string;
   groupName: string;
-  moduleId?: string;
+}
+
+export interface DeleteGroupRequest {
+  groupName: string;
 }
 
 export interface RemoveGroupMemberRequest {
@@ -98,6 +116,7 @@ export interface PanelApiError {
 }
 
 export type PersonStatusFilter = 'all' | 'active' | 'inactive';
+export type GroupStatusFilter = 'all' | 'active' | 'inactive';
 
 export type NoticeKind = 'success' | 'error' | 'warning';
 export type NoticeHandler = (kind: NoticeKind, message: string) => void;

@@ -15,12 +15,19 @@ vi.mock('./EditGroupDialog', () => ({
   EditGroupDialog: () => null,
 }));
 
+vi.mock('./DeleteGroupAlertDialog', () => ({
+  DeleteGroupAlertDialog: () => null,
+}));
+
 describe('GroupsSection', () => {
   test('usa el estilo primario para crear un grupo', () => {
-    render(<GroupsSection isGeneralAdmin onNotice={vi.fn()} />);
+    render(<GroupsSection onNotice={vi.fn()} />);
 
     expect(
-      screen.getByRole('button', { name: 'Crear nuevo grupo' }),
+      screen.getByRole('button', { name: 'Agregar Grupo' }),
     ).toHaveClass('bg-primary', 'text-primary-foreground');
+    expect(
+      screen.getByRole('combobox', { name: 'Filtrar por módulo' }),
+    ).toBeInTheDocument();
   });
 });

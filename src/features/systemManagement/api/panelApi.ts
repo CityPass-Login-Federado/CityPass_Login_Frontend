@@ -4,6 +4,7 @@ import {
   type AssignUserToGroupRequest,
   type CreateGroupRequest,
   type CreatePersonRequest,
+  type DeleteGroupRequest,
   type GroupListParams,
   type MembershipChangeResponse,
   type PaginatedResponse,
@@ -81,6 +82,14 @@ export const createGroup = async (
 ): Promise<PanelGroup> => {
   const response = await axiosInstance.post<PanelGroup>('/panel/groups', data);
   return response.data;
+};
+
+export const deleteGroup = async ({
+  groupName,
+}: DeleteGroupRequest): Promise<void> => {
+  await axiosInstance.delete(
+    `/panel/groups/${encodeURIComponent(groupName)}`,
+  );
 };
 
 export const addUserToGroup = async ({

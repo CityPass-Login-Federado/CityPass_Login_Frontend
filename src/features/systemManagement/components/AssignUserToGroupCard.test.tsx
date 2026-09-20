@@ -27,35 +27,21 @@ describe('AssignUserToGroupCard', () => {
     });
   });
 
-  test('no consulta opciones globales antes de que un admin general elija módulo', () => {
-    render(<AssignUserToGroupCard isGeneralAdmin onNotice={vi.fn()} />);
+  test('consulta las opciones sin depender del alcance administrativo', () => {
+    render(<AssignUserToGroupCard onNotice={vi.fn()} />);
 
     expect(mocks.usePeople).toHaveBeenCalledWith(
-      { module: undefined, page: 0, size: 1000 },
-      { enabled: false },
+      { page: 0, size: 1000 },
     );
     expect(mocks.useGroups).toHaveBeenCalledWith(
-      { module: undefined, page: 0, size: 1000 },
-      { enabled: false },
+      { page: 0, size: 1000 },
     );
     expect(
-      screen.getByRole('button', { name: 'Asignar a grupo' }),
+      screen.getByRole('button', { name: 'Asignar a Grupo' }),
     ).toBeDisabled();
-  });
-
-  test('carga opciones inmediatamente para un admin de módulo', () => {
-    render(
-      <AssignUserToGroupCard isGeneralAdmin={false} onNotice={vi.fn()} />,
-    );
-
-    expect(mocks.usePeople).toHaveBeenCalledWith(
-      { module: undefined, page: 0, size: 1000 },
-      { enabled: true },
-    );
-    expect(mocks.useGroups).toHaveBeenCalledWith(
-      { module: undefined, page: 0, size: 1000 },
-      { enabled: true },
-    );
+    expect(
+      screen.queryByRole('combobox', { name: 'Seleccionar módulo' }),
+    ).not.toBeInTheDocument();
   });
 
   test('mantiene deshabilitadas las opciones mientras muestra datos placeholder', () => {
@@ -68,9 +54,7 @@ describe('AssignUserToGroupCard', () => {
     mocks.usePeople.mockReturnValue(placeholderQuery);
     mocks.useGroups.mockReturnValue(placeholderQuery);
 
-    render(
-      <AssignUserToGroupCard isGeneralAdmin={false} onNotice={vi.fn()} />,
-    );
+    render(<AssignUserToGroupCard onNotice={vi.fn()} />);
 
     expect(
       screen.getByRole('combobox', { name: 'Seleccionar usuario' }),

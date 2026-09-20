@@ -25,6 +25,10 @@ vi.mock('../hooks/useGroups', () => ({
     isPending: false,
     mutate: vi.fn(),
   }),
+  useDeleteGroup: () => ({
+    isPending: false,
+    mutate: vi.fn(),
+  }),
 }));
 
 describe('system management coverage additions', () => {
@@ -58,11 +62,11 @@ describe('system management coverage additions', () => {
   test('renderiza la sección de grupos sin error y usa la vista de acceso no autorizado', () => {
     render(
       <MemoryRouter>
-        <GroupsSection isGeneralAdmin onNotice={vi.fn()} />
+        <GroupsSection onNotice={vi.fn()} />
       </MemoryRouter>,
     );
     expect(
-      screen.getByRole('button', { name: 'Crear nuevo grupo' }),
+      screen.getByRole('button', { name: 'Agregar Grupo' }),
     ).toBeInTheDocument();
 
     render(
