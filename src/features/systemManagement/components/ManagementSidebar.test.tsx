@@ -19,4 +19,17 @@ describe('ManagementSidebar', () => {
     expect(userLinks[0]).toHaveAttribute('href', '/panel/users');
     expect(userLinks[0]).toHaveAttribute('aria-current', 'page');
   });
+
+  test('navega a la vista exclusiva de grupos', () => {
+    render(
+      <MemoryRouter initialEntries={['/panel/groups']}>
+        <ManagementSidebar />
+      </MemoryRouter>,
+    );
+
+    const groupLinks = screen.getAllByRole('link', { name: 'ABM de Grupos' });
+    expect(groupLinks).toHaveLength(2);
+    expect(groupLinks[0]).toHaveAttribute('href', '/panel/groups');
+    expect(groupLinks[0]).toHaveAttribute('aria-current', 'page');
+  });
 });

@@ -38,7 +38,6 @@ export const groupFormSchema = z.object({
 export type GroupFormValues = z.infer<typeof groupFormSchema>;
 
 export const assignmentFormSchema = z.object({
-  moduleId: z.string().optional(),
   userId: z.string().min(1, 'Seleccione un usuario'),
   groupName: z.string().min(1, 'Seleccione un grupo'),
 });

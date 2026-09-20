@@ -5,6 +5,7 @@ import {
   addUserToGroup,
   createGroup,
   createPerson,
+  deleteGroup,
   fetchGroups,
   fetchPeople,
   removeUserFromGroup,
@@ -94,18 +95,23 @@ describe('panelApi', () => {
       .mockResolvedValueOnce({
         data: { group: { name: 'soporte-n2', members: ['u1'], reserved: false }, warnings: [] },
       });
-    const deleteSpy = vi.spyOn(axiosInstance, 'delete').mockResolvedValue({
-      data: { group: { name: 'soporte-n2', members: [], reserved: false }, warnings: [] },
-    });
+    const deleteSpy = vi
+      .spyOn(axiosInstance, 'delete')
+      .mockResolvedValueOnce({ data: undefined })
+      .mockResolvedValueOnce({
+        data: { group: { name: 'soporte-n2', members: [], reserved: false }, warnings: [] },
+      });
 
     const groups = await fetchGroups({ page: 0, size: 10, reserved: false, module: 'reclamos' });
     const created = await createGroup({ name: 'soporte-n2' });
-    const added = await addUserToGroup({ userId: 'u1', groupName: 'soporte-n2', moduleId: 'reclamos' });
+    await deleteGroup({ groupName: 'soporte-n2' });
+    const added = await addUserToGroup({ userId: 'u1', groupName: 'soporte-n2' });
     const removed = await removeUserFromGroup({ userId: 'u1', groupName: 'soporte-n2' });
 
     expect(getSpy).toHaveBeenCalledWith('/panel/groups', { params: { page: 0, size: 10, reserved: false, module: 'reclamos' } });
     expect(postSpy).toHaveBeenCalledWith('/panel/groups', { name: 'soporte-n2' });
     expect(postSpy).toHaveBeenCalledWith('/panel/groups/soporte-n2/members', { memberUid: 'u1' });
+    expect(deleteSpy).toHaveBeenCalledWith('/panel/groups/soporte-n2');
     expect(deleteSpy).toHaveBeenCalledWith('/panel/groups/soporte-n2/members/u1');
     expect(groups.content[0].name).toBe('soporte');
     expect(created.name).toBe('soporte-n2');

@@ -7,6 +7,7 @@ import {
   addUserToGroup,
   createGroup,
   createPerson,
+  deleteGroup,
   fetchGroups,
   fetchPeople,
   removeUserFromGroup,
@@ -18,6 +19,7 @@ import { panelQueryKeys } from '../utils/queryKeys';
 import {
   useAssignUserToGroup,
   useCreateGroup,
+  useDeleteGroup,
   useGroups,
   useRemoveUserFromGroup,
 } from './useGroups';
@@ -32,6 +34,7 @@ vi.mock('../api/panelApi', () => ({
   addUserToGroup: vi.fn(),
   createGroup: vi.fn(),
   createPerson: vi.fn(),
+  deleteGroup: vi.fn(),
   fetchGroups: vi.fn(),
   fetchPeople: vi.fn(),
   removeUserFromGroup: vi.fn(),
@@ -222,6 +225,22 @@ describe('reconciliación de cachés del panel', () => {
       await expect(
         result.current.mutateAsync({ name: 'auditoria' }),
       ).rejects.toBe(backendError);
+    });
+
+    expect(queryClient.getQueryState(peopleListKey)?.isInvalidated).toBe(false);
+    expect(queryClient.getQueryState(groupsListKey)?.isInvalidated).toBe(true);
+    queryClient.clear();
+  });
+
+  test('eliminar un grupo invalida el listado de grupos', async () => {
+    vi.mocked(deleteGroup).mockResolvedValueOnce();
+    const queryClient = createQueryClient();
+    const { result } = renderHook(() => useDeleteGroup(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ groupName: 'soporte-n2' });
     });
 
     expect(queryClient.getQueryState(peopleListKey)?.isInvalidated).toBe(false);

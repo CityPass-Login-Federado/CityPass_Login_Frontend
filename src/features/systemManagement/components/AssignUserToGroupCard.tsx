@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
@@ -18,54 +19,60 @@ import {
   assignmentFormSchema,
   type AssignmentFormValues,
 } from '../schemas/systemManagementSchemas';
-import { type NoticeHandler } from '../types';
+import {
+  type GroupSelectOption,
+  type NoticeHandler,
+  type UserSelectOption,
+} from '../types';
 import { getPanelErrorMessage } from '../utils/errors';
-import { CITYPASS_MODULES } from '../utils/modules';
+import { getGroupDisplayName } from '../utils/groups';
 
 interface AssignUserToGroupCardProps {
-  isGeneralAdmin: boolean;
   onNotice: NoticeHandler;
 }
 
 export const AssignUserToGroupCard = ({
-  isGeneralAdmin,
   onNotice,
 }: AssignUserToGroupCardProps) => {
   const {
     control,
     handleSubmit,
     reset,
-    setValue,
     watch,
     formState: { errors },
   } = useForm<AssignmentFormValues>({
     resolver: zodResolver(assignmentFormSchema),
-    defaultValues: { moduleId: '', userId: '', groupName: '' },
+    defaultValues: { userId: '', groupName: '' },
   });
-  const moduleId = watch('moduleId');
-  const selectedModule = isGeneralAdmin && moduleId ? moduleId : undefined;
-  const shouldLoadOptions = !isGeneralAdmin || Boolean(selectedModule);
-  const peopleQuery = usePeople(
-    { page: 0, size: 1000, module: selectedModule },
-    { enabled: shouldLoadOptions },
-  );
-  const groupsQuery = useGroups(
-    { page: 0, size: 1000, module: selectedModule },
-    { enabled: shouldLoadOptions },
-  );
+  const userId = watch('userId');
+  const groupName = watch('groupName');
+  const peopleQuery = usePeople({ page: 0, size: 1000 });
+  const groupsQuery = useGroups({ page: 0, size: 1000 });
   const mutation = useAssignUserToGroup();
 
-  const handleFormSubmit = (values: AssignmentFormValues) => {
-    if (isGeneralAdmin && !values.moduleId) {
-      onNotice('error', 'Seleccione un módulo antes de asignar.');
-      return;
-    }
+  const userOptions = useMemo<UserSelectOption[]>(
+    () =>
+      (peopleQuery.data?.content ?? []).map((person) => ({
+        value: person.uid,
+        label: `${person.givenName} ${person.sn} (${person.uid})`,
+        email: person.email,
+      })),
+    [peopleQuery.data?.content],
+  );
+  const groupOptions = useMemo<GroupSelectOption[]>(
+    () =>
+      (groupsQuery.data?.content ?? []).map((group) => ({
+        value: group.name,
+        label: getGroupDisplayName(group),
+      })),
+    [groupsQuery.data?.content],
+  );
 
+  const handleFormSubmit = (values: AssignmentFormValues) => {
     mutation.mutate(
       {
         userId: values.userId,
         groupName: values.groupName,
-        moduleId: values.moduleId || undefined,
       },
       {
         onSuccess: (response) => {
@@ -73,7 +80,7 @@ export const AssignUserToGroupCard = ({
           if (response.warnings.length) {
             onNotice('warning', response.warnings.join(' '));
           }
-          reset({ moduleId: values.moduleId, userId: '', groupName: '' });
+          reset({ userId: '', groupName: '' });
         },
         onError: (error) =>
           onNotice(
@@ -85,58 +92,22 @@ export const AssignUserToGroupCard = ({
   };
 
   const isLoading =
-    shouldLoadOptions &&
-    (peopleQuery.isPending ||
-      peopleQuery.isPlaceholderData ||
-      groupsQuery.isPending ||
-      groupsQuery.isPlaceholderData);
-  const hasLoadError =
-    shouldLoadOptions && (peopleQuery.isError || groupsQuery.isError);
+    peopleQuery.isPending ||
+    peopleQuery.isPlaceholderData ||
+    groupsQuery.isPending ||
+    groupsQuery.isPlaceholderData;
+  const hasLoadError = peopleQuery.isError || groupsQuery.isError;
 
   return (
     <section id="assignment" aria-labelledby="assignment-title">
       <Card className="h-full">
         <CardHeader className="p-4 pb-3 sm:p-5 sm:pb-3">
           <CardTitle id="assignment-title" className="text-base">
-            Asignar usuario a grupo
+            Asignar Usuario a Grupo
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
           <form className="space-y-4" onSubmit={handleSubmit(handleFormSubmit)}>
-            {isGeneralAdmin && (
-              <SelectField
-                label="Seleccionar módulo"
-                error={errors.moduleId?.message}
-              >
-                <Controller
-                  name="moduleId"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        setValue('userId', '');
-                        setValue('groupName', '');
-                      }}
-                      disabled={mutation.isPending}
-                    >
-                      <SelectTrigger aria-label="Seleccionar módulo">
-                        <SelectValue placeholder="Elegir un módulo…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CITYPASS_MODULES.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </SelectField>
-            )}
-
             <SelectField
               label="Seleccionar usuario"
               error={errors.userId?.message}
@@ -148,27 +119,17 @@ export const AssignUserToGroupCard = ({
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
-                    disabled={
-                      isLoading ||
-                      mutation.isPending ||
-                      (isGeneralAdmin && !moduleId)
-                    }
+                    disabled={isLoading || hasLoadError || mutation.isPending}
                   >
                     <SelectTrigger aria-label="Seleccionar usuario">
                       <SelectValue
-                        placeholder={
-                          !shouldLoadOptions
-                            ? 'Seleccione un módulo primero…'
-                            : isLoading
-                              ? 'Cargando…'
-                              : 'Buscar usuario…'
-                        }
+                        placeholder={isLoading ? 'Cargando…' : 'Buscar usuario…'}
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      {(peopleQuery.data?.content ?? []).map((person) => (
-                        <SelectItem key={person.employeeNumber} value={person.uid}>
-                          {person.givenName} {person.sn} ({person.uid})
+                      {userOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -188,27 +149,17 @@ export const AssignUserToGroupCard = ({
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
-                    disabled={
-                      isLoading ||
-                      mutation.isPending ||
-                      (isGeneralAdmin && !moduleId)
-                    }
+                    disabled={isLoading || hasLoadError || mutation.isPending}
                   >
                     <SelectTrigger aria-label="Seleccionar grupo">
                       <SelectValue
-                        placeholder={
-                          !shouldLoadOptions
-                            ? 'Seleccione un módulo primero…'
-                            : isLoading
-                              ? 'Cargando…'
-                              : 'Elegir un grupo…'
-                        }
+                        placeholder={isLoading ? 'Cargando…' : 'Elegir un grupo…'}
                       />
                     </SelectTrigger>
                     <SelectContent>
-                      {(groupsQuery.data?.content ?? []).map((group) => (
-                        <SelectItem key={group.name} value={group.name}>
-                          {group.name}
+                      {groupOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -227,13 +178,14 @@ export const AssignUserToGroupCard = ({
               type="submit"
               className="w-full"
               disabled={
-                !shouldLoadOptions ||
+                !userId ||
+                !groupName ||
                 isLoading ||
                 hasLoadError ||
                 mutation.isPending
               }
             >
-              {mutation.isPending ? 'Asignando…' : 'Asignar a grupo'}
+              {mutation.isPending ? 'Asignando…' : 'Asignar a Grupo'}
             </Button>
           </form>
         </CardContent>

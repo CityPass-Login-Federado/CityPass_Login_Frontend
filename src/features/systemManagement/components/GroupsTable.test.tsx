@@ -12,30 +12,30 @@ const group: PanelGroup = {
 };
 
 describe('GroupsTable', () => {
-  test.each([
-    { isGeneralAdmin: false, expected: false },
-    { isGeneralAdmin: true, expected: true },
-  ])(
-    'condiciona la columna Módulo según el alcance administrativo',
-    ({ isGeneralAdmin, expected }) => {
-      render(
-        <GroupsTable
-          groups={[group]}
-          isGeneralAdmin={isGeneralAdmin}
-          onEdit={vi.fn()}
-        />,
-      );
+  test('presenta las columnas y acciones requeridas por la vista', () => {
+    render(
+      <GroupsTable
+        groups={[group]}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
 
-      const moduleHeader = screen.queryByRole('columnheader', {
-        name: 'Módulo',
-      });
-      if (expected) {
-        expect(moduleHeader).toBeInTheDocument();
-        expect(screen.getByText('Reclamos')).toBeInTheDocument();
-      } else {
-        expect(moduleHeader).not.toBeInTheDocument();
-        expect(screen.queryByText('Reclamos')).not.toBeInTheDocument();
-      }
-    },
-  );
+    expect(
+      screen.getByRole('columnheader', { name: 'Número de Grupo' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', { name: 'Cantidad de Usuarios' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Activo')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Modificar soporte-n2' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Eliminar soporte-n2' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('columnheader', { name: 'Módulo' }),
+    ).not.toBeInTheDocument();
+  });
 });

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 
 const navigation = [
   { id: 'home', label: 'Inicio', to: '/panel', icon: LayoutDashboard },
-  { id: 'groups', label: 'ABM de Grupos', to: '/panel#groups', icon: UsersRound },
+  { id: 'groups', label: 'ABM de Grupos', to: '/panel/groups', icon: UsersRound },
   { id: 'users', label: 'ABM de Usuarios', to: '/panel/users', icon: Users },
 ];
 
@@ -11,7 +11,7 @@ const useActiveNavigationItem = () => {
   const location = useLocation();
 
   if (location.pathname === '/panel/users') return 'users';
-  if (location.hash === '#groups') return 'groups';
+  if (location.pathname === '/panel/groups') return 'groups';
   return 'home';
 };
 

@@ -27,14 +27,8 @@ export const SystemManagementPage = () => {
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(300px,0.8fr)]">
-        <GroupsSection
-          isGeneralAdmin={isGeneralAdmin}
-          onNotice={handleNotice}
-        />
-        <AssignUserToGroupCard
-          isGeneralAdmin={isGeneralAdmin}
-          onNotice={handleNotice}
-        />
+        <GroupsSection onNotice={handleNotice} />
+        <AssignUserToGroupCard onNotice={handleNotice} />
       </div>
     </ManagementPageLayout>
   );
