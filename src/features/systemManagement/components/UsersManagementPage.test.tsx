@@ -12,6 +12,10 @@ vi.mock('./UsersSection', () => ({
   ),
 }));
 
+vi.mock('@/features/auth/components/UserMenu', () => ({
+  UserMenu: () => null,
+}));
+
 describe('UsersManagementPage', () => {
   test('presenta la vista exclusiva y el alcance general', () => {
     useAuthStore.setState({

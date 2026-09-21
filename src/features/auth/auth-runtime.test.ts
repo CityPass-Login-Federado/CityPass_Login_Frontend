@@ -7,6 +7,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { axiosInstance } from '@/lib/axios';
 import * as loginApi from './api/login';
+import * as logoutApi from './api/logout';
 import { useLogin } from './hooks/useLogin';
 import { useAuthStore } from './store/useAuthStore';
 import { buildSessionFromToken, decodeJwtClaims, isGeneralAdminClaims } from './utils/jwt';
@@ -138,6 +139,19 @@ describe('auth runtime branches', () => {
       username: 'jperez',
       password: 'secret',
       clientId: 'client-1',
+    });
+  });
+
+  test('logoutUser envía el refresh token para revocar la sesión', async () => {
+    const postSpy = vi.spyOn(axiosInstance, 'post').mockResolvedValue({
+      data: undefined,
+    } as Awaited<ReturnType<typeof axiosInstance.post>>);
+
+    await expect(
+      logoutApi.logoutUser({ refreshToken: 'refresh-1' }),
+    ).resolves.toBeUndefined();
+    expect(postSpy).toHaveBeenCalledWith('/auth/logout', {
+      refreshToken: 'refresh-1',
     });
   });
 

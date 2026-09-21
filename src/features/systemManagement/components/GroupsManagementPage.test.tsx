@@ -14,6 +14,10 @@ vi.mock('./AssignUserToGroupCard', () => ({
   AssignUserToGroupCard: () => <div>Asignación de usuario</div>,
 }));
 
+vi.mock('@/features/auth/components/UserMenu', () => ({
+  UserMenu: () => null,
+}));
+
 describe('GroupsManagementPage', () => {
   test('presenta únicamente la gestión de grupos y su asignación', () => {
     useAuthStore.setState({

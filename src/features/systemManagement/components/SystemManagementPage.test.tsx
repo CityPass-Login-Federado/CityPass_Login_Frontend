@@ -24,6 +24,10 @@ vi.mock('./ManagementSidebar', () => ({
   ManagementSidebar: () => null,
 }));
 
+vi.mock('@/features/auth/components/UserMenu', () => ({
+  UserMenu: () => null,
+}));
+
 vi.mock('./UsersSection', () => ({
   UsersSection: ({ onNotice }: NoticeSourceProps) => (
     <div>

@@ -1,9 +1,9 @@
 import { type ReactNode } from 'react';
 
 import {
-  selectIsGeneralAdmin,
   useAuthStore,
 } from '@/features/auth/store/useAuthStore';
+import { UserMenu } from '@/features/auth/components/UserMenu';
 
 import { ManagementSidebar } from './ManagementSidebar';
 
@@ -19,7 +19,6 @@ export const ManagementPageLayout = ({
   children,
 }: ManagementPageLayoutProps) => {
   const session = useAuthStore((state) => state.session);
-  const isGeneralAdmin = useAuthStore(selectIsGeneralAdmin);
 
   return (
     <div
@@ -37,11 +36,7 @@ export const ManagementPageLayout = ({
               CityPass+ · Administración
             </p>
           </div>
-          <div className="ml-auto rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            {isGeneralAdmin
-              ? 'Admin General'
-              : `Admin · ${session?.module ?? 'Módulo'}`}
-          </div>
+          <UserMenu />
         </header>
 
         <main className="mx-auto max-w-[1440px] space-y-5 px-4 py-7 sm:px-6 lg:px-8">
