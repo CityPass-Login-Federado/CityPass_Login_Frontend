@@ -29,11 +29,9 @@ export const GroupsTable = ({
     <Table>
       <TableHeader className="bg-slate-950 text-white">
         <TableRow className="border-slate-950 hover:bg-slate-950">
-          <TableHead className="min-w-40 text-white">Número de Grupo</TableHead>
           <TableHead className="min-w-44 text-white">Nombre</TableHead>
-          <TableHead className="min-w-40 text-white">
-            Cantidad de Usuarios
-          </TableHead>
+          <TableHead className="min-w-40 text-white">Cantidad de Usuarios</TableHead>
+          <TableHead className="min-w-28 text-white">Reservado</TableHead>
           <TableHead className="min-w-28 text-white">Estado</TableHead>
           <TableHead className="text-right text-white">Acciones</TableHead>
         </TableRow>
@@ -41,13 +39,15 @@ export const GroupsTable = ({
       <TableBody>
         {groups.map((group) => (
           <TableRow key={`${group.module ?? 'scoped'}-${group.name}`}>
-            <TableCell className="font-medium">
-              {group.groupNumber ?? group.name}
-            </TableCell>
-            <TableCell className="text-muted-foreground">
+            <TableCell>
               {getGroupDisplayName(group)}
             </TableCell>
             <TableCell>{group.members.length}</TableCell>
+            <TableCell>
+              <Badge variant={group.reserved ? 'secondary' : 'default'}>
+                {group.reserved ? 'Reservado' : 'Disponible'}
+              </Badge>
+            </TableCell>
             <TableCell>
               <Badge variant={group.disabled ? 'destructive' : 'success'}>
                 {group.disabled ? 'Inactivo' : 'Activo'}

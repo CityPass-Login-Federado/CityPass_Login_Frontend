@@ -64,7 +64,7 @@ export const UsersTable = ({
                 </div>
                 <div className="text-xs text-muted-foreground">{person.uid}</div>
               </TableCell>
-              <TableCell className="text-muted-foreground">
+              <TableCell>
                 {person.email}
               </TableCell>
               <TableCell
