@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { logoutUser } from '../api/logout';
+import { getRefreshToken } from '../session/tokenVault';
 import { useAuthStore } from '../store/useAuthStore';
 import { type ApiError } from '../types';
 
@@ -14,7 +15,7 @@ export const useLogout = () => {
 
   return useMutation<void, AxiosError<ApiError>, void>({
     mutationFn: async () => {
-      const refreshToken = localStorage.getItem('refresh_token');
+      const refreshToken = getRefreshToken();
 
       if (refreshToken) {
         await logoutUser({ refreshToken });

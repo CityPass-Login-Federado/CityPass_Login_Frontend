@@ -9,6 +9,10 @@ const GENERAL_ADMIN_ROLES = new Set([
   'role_admin_general',
 ]);
 
+const EXPECTED_AUDIENCE = 'citypass-admin-api';
+const EXPECTED_TOKEN_USE = 'human';
+const SUPPORTED_CONTRACT_VERSION = 1;
+
 const decodeBase64Url = (value: string): string => {
   const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
   const padding = '='.repeat((4 - (normalized.length % 4)) % 4);
@@ -55,9 +59,27 @@ export const isGeneralAdminClaims = (claims: JwtClaims): boolean => {
   return roles.some((role) => GENERAL_ADMIN_ROLES.has(role));
 };
 
+const hasExpectedAudience = (audience: JwtClaims['aud']): boolean => {
+  if (typeof audience === 'string') {
+    return audience === EXPECTED_AUDIENCE;
+  }
+
+  return (
+    Array.isArray(audience) && audience.includes(EXPECTED_AUDIENCE)
+  );
+};
+
 export const buildSessionFromToken = (token: string): AuthSession | null => {
   const claims = decodeJwtClaims(token);
-  if (!claims || claims.exp * 1000 <= Date.now()) return null;
+  if (
+    !claims ||
+    claims.exp * 1000 <= Date.now() ||
+    !hasExpectedAudience(claims.aud) ||
+    claims.token_use !== EXPECTED_TOKEN_USE ||
+    claims.ver !== SUPPORTED_CONTRACT_VERSION
+  ) {
+    return null;
+  }
 
   return {
     userId: claims.sub,

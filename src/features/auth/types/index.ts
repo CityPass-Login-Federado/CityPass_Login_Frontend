@@ -29,12 +29,6 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
-export interface LoginFormValues {
-  username: string;
-  password: string;
-  rememberMe: boolean;
-}
-
 export interface ApiError {
   timestamp: string;
   status: number;

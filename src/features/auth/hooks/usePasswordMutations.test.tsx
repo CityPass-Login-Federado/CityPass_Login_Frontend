@@ -6,6 +6,12 @@ import { toast } from 'sonner';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import * as passwordApi from '../api/password';
+import {
+  clearAuthTokens,
+  getAccessToken,
+  getRefreshToken,
+  setAuthTokens,
+} from '../session/tokenVault';
 import { useAuthStore } from '../store/useAuthStore';
 import {
   useChangePassword,
@@ -69,8 +75,7 @@ const renderMutation = (mode: 'recovery' | 'change') => {
 
 describe('password mutation success', () => {
   beforeEach(() => {
-    localStorage.setItem('access_token', 'access-token');
-    localStorage.setItem('refresh_token', 'refresh-token');
+    setAuthTokens('access-token', 'refresh-token');
     useAuthStore.setState({
       session: {
         userId: 'U1',
@@ -86,6 +91,7 @@ describe('password mutation success', () => {
 
   afterEach(() => {
     localStorage.clear();
+    clearAuthTokens();
     useAuthStore.setState({ session: null, isHydrated: false });
     vi.restoreAllMocks();
   });
@@ -104,8 +110,8 @@ describe('password mutation success', () => {
 
       expect(await screen.findByText('Pantalla de acceso')).toBeInTheDocument();
       await waitFor(() => {
-        expect(localStorage.getItem('access_token')).toBeNull();
-        expect(localStorage.getItem('refresh_token')).toBeNull();
+        expect(getAccessToken()).toBeNull();
+        expect(getRefreshToken()).toBeNull();
         expect(useAuthStore.getState().session).toBeNull();
         expect(queryClient.getQueryData(['private-data'])).toBeUndefined();
         expect(toast.success).toHaveBeenCalledWith(

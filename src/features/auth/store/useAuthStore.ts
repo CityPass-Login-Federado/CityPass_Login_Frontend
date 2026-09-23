@@ -1,35 +1,41 @@
 import { create } from 'zustand';
 
 import { type AuthSession } from '../types';
-import { buildSessionFromToken } from '../utils/jwt';
+import { clearAuthTokens } from '../session/tokenVault';
 
 interface AuthState {
   session: AuthSession | null;
   isHydrated: boolean;
-  setSessionFromToken: (accessToken: string) => void;
-  hydrateSession: () => void;
+  setSession: (session: AuthSession) => void;
+  initializeSession: () => void;
   clearSession: () => void;
 }
 
-const clearStoredTokens = () => {
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
+const clearLegacyStoredTokens = () => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.removeItem('access_token');
+    window.localStorage.removeItem('refresh_token');
+  } catch {
+    return;
+  }
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
   session: null,
   isHydrated: false,
-  setSessionFromToken: (accessToken) => {
-    set({ session: buildSessionFromToken(accessToken), isHydrated: true });
-  },
-  hydrateSession: () => {
-    const accessToken = localStorage.getItem('access_token');
-    const session = accessToken ? buildSessionFromToken(accessToken) : null;
-    if (accessToken && !session) clearStoredTokens();
+  setSession: (session) => {
     set({ session, isHydrated: true });
   },
+  initializeSession: () => {
+    clearAuthTokens();
+    clearLegacyStoredTokens();
+    set({ session: null, isHydrated: true });
+  },
   clearSession: () => {
-    clearStoredTokens();
+    clearAuthTokens();
+    clearLegacyStoredTokens();
     set({ session: null, isHydrated: true });
   },
 }));

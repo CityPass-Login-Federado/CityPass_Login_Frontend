@@ -6,7 +6,6 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useLogin } from '../hooks/useLogin';
 import { loginSchema, type LoginFormValues } from '../utils/loginSchema';
 import { type ApiError, type LoginRequest } from '../types';
@@ -18,19 +17,14 @@ export const LoginForm = () => {
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       username: '',
       password: '',
-      rememberMe: false,
     },
   });
-
-  const rememberMe = watch('rememberMe');
 
   const handleFormSubmit = (data: LoginFormValues) => {
     const loginRequest: LoginRequest = {
@@ -114,23 +108,7 @@ export const LoginForm = () => {
               )}
             </div>
 
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="rememberMe"
-                  checked={rememberMe}
-                  onCheckedChange={(checked) =>
-                    setValue('rememberMe', checked === true)
-                  }
-                  disabled={isPending}
-                />
-                <Label
-                  htmlFor="rememberMe"
-                  className="cursor-pointer text-sm font-normal"
-                >
-                  Recordarme
-                </Label>
-              </div>
+            <div className="flex justify-end">
               <Link
                 to="/forgot-password"
                 className="text-sm font-medium text-primary underline-offset-4 hover:underline"

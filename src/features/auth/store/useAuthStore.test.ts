@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, test } from 'vitest';
 
 import { type AuthSession } from '../types';
+import { establishSession } from '../session/sessionManager';
+import { clearAuthTokens } from '../session/tokenVault';
 import { selectCanAccessPanel, useAuthStore } from './useAuthStore';
 
 const encode = (value: object) =>
@@ -11,7 +13,12 @@ const encode = (value: object) =>
     .replace(/\//g, '_');
 
 const createToken = (payload: object) =>
-  `${encode({ alg: 'none' })}.${encode(payload)}.`;
+  `${encode({ alg: 'none' })}.${encode({
+    aud: ['citypass-admin-api'],
+    token_use: 'human',
+    ver: 1,
+    ...payload,
+  })}.`;
 
 const moduleAdminSession: AuthSession = {
   userId: 'U000001',
@@ -31,6 +38,7 @@ const canAccessPanel = (session: AuthSession | null) => {
 describe('selectCanAccessPanel', () => {
   afterEach(() => {
     useAuthStore.setState({ session: null, isHydrated: false });
+    clearAuthTokens();
     localStorage.clear();
   });
 
@@ -69,7 +77,12 @@ describe('selectCanAccessPanel', () => {
       ver: 1,
     });
 
-    useAuthStore.getState().setSessionFromToken(token);
+    establishSession({
+      access_token: token,
+      refresh_token: 'refresh-token',
+      token_type: 'Bearer',
+      expires_in: 900,
+    });
 
     expect(useAuthStore.getState().session).toMatchObject({
       username: 'admin-global',
