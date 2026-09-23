@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +13,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 import { useCreatePerson, useUpdatePerson } from '../hooks/usePeople';
 import {
@@ -21,16 +28,20 @@ import {
 } from '../schemas/systemManagementSchemas';
 import { type PanelPerson } from '../types';
 import { getPanelErrorMessage } from '../utils/errors';
+import { CITYPASS_MODULES } from '../utils/modules';
 
 interface PersonFormDialogProps {
   open: boolean;
   person: PanelPerson | null;
+  isGeneralAdmin: boolean;
+  initialModule?: string;
   onOpenChange: (open: boolean) => void;
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
 }
 
 const emptyValues: PersonFormValues = {
+  module: '',
   givenName: '',
   sn: '',
   username: '',
@@ -41,6 +52,8 @@ const emptyValues: PersonFormValues = {
 export const PersonFormDialog = ({
   open,
   person,
+  isGeneralAdmin,
+  initialModule,
   onOpenChange,
   onSuccess,
   onError,
@@ -52,6 +65,7 @@ export const PersonFormDialog = ({
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     setError,
@@ -66,17 +80,23 @@ export const PersonFormDialog = ({
     reset(
       person
         ? {
+            module: person.module ?? initialModule ?? '',
             givenName: person.givenName,
             sn: person.sn,
             username: person.uid,
             email: person.email,
             temporaryPassword: '',
           }
-        : emptyValues,
+        : { ...emptyValues, module: initialModule ?? '' },
     );
-  }, [open, person, reset]);
+  }, [initialModule, open, person, reset]);
 
   const handleFormSubmit = (values: PersonFormValues) => {
+    if (isGeneralAdmin && !values.module) {
+      setError('module', { message: 'Seleccione un módulo' });
+      return;
+    }
+
     if (!isEditing && values.temporaryPassword.length < 8) {
       setError('temporaryPassword', {
         message: 'La contraseña temporal es obligatoria y debe tener 8 caracteres',
@@ -88,6 +108,7 @@ export const PersonFormDialog = ({
       updateMutation.mutate(
         {
           uid: person.uid,
+          module: person.module || values.module || undefined,
           data: {
             givenName: values.givenName,
             sn: values.sn,
@@ -112,11 +133,14 @@ export const PersonFormDialog = ({
 
     createMutation.mutate(
       {
-        givenName: values.givenName,
-        sn: values.sn,
-        username: values.username,
-        email: values.email,
-        temporaryPassword: values.temporaryPassword,
+        module: values.module || undefined,
+        data: {
+          givenName: values.givenName,
+          sn: values.sn,
+          username: values.username,
+          email: values.email,
+          temporaryPassword: values.temporaryPassword,
+        },
       },
       {
         onSuccess: () => {
@@ -149,6 +173,43 @@ export const PersonFormDialog = ({
           onSubmit={handleSubmit(handleFormSubmit)}
           noValidate
         >
+          {isGeneralAdmin && (
+            <div className="sm:col-span-2">
+              <FormField
+                id="personModule"
+                label="Módulo"
+                error={errors.module?.message}
+              >
+                <Controller
+                  name="module"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={isPending || isEditing}
+                    >
+                      <SelectTrigger
+                        id="personModule"
+                        aria-label="Seleccionar módulo del usuario"
+                        aria-invalid={!!errors.module}
+                      >
+                        <SelectValue placeholder="Seleccione un módulo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CITYPASS_MODULES.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </FormField>
+            </div>
+          )}
+
           <FormField
             id="givenName"
             label="Nombre"

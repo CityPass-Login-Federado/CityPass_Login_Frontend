@@ -66,7 +66,7 @@ describe('system management coverage additions', () => {
   test('renderiza la sección de grupos sin error y usa la vista de acceso no autorizado', () => {
     render(
       <MemoryRouter>
-        <GroupsSection onNotice={vi.fn()} />
+        <GroupsSection isGeneralAdmin={false} onNotice={vi.fn()} />
       </MemoryRouter>,
     );
     expect(

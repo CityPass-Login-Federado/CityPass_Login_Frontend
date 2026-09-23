@@ -1,4 +1,4 @@
-import { Boxes, CircleGauge, Plus, Search } from 'lucide-react';
+import { Boxes, Plus, Search, ShieldCheck } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,25 +10,27 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import { type GroupStatusFilter } from '../types';
+import { type GroupReservationFilter } from '../types';
 import { CITYPASS_MODULES } from '../utils/modules';
 
 interface GroupFiltersProps {
   search: string;
-  status: GroupStatusFilter;
+  reservation: GroupReservationFilter;
   module: string;
+  isGeneralAdmin: boolean;
   onSearchChange: (value: string) => void;
-  onStatusChange: (value: GroupStatusFilter) => void;
+  onReservationChange: (value: GroupReservationFilter) => void;
   onModuleChange: (value: string) => void;
   onAddGroup: () => void;
 }
 
 export const GroupFilters = ({
   search,
-  status,
+  reservation,
   module,
+  isGeneralAdmin,
   onSearchChange,
-  onStatusChange,
+  onReservationChange,
   onModuleChange,
   onAddGroup,
 }: GroupFiltersProps) => (
@@ -45,40 +47,44 @@ export const GroupFilters = ({
     </div>
 
     <Select
-      value={status}
-      onValueChange={(value) => onStatusChange(value as GroupStatusFilter)}
+      value={reservation}
+      onValueChange={(value) =>
+        onReservationChange(value as GroupReservationFilter)
+      }
     >
       <SelectTrigger
-        className="h-9 w-full lg:w-[150px] lg:shrink-0"
-        aria-label="Filtrar por estado"
+        className="h-9 w-full lg:w-[170px] lg:shrink-0"
+        aria-label="Filtrar por reserva"
       >
-        <CircleGauge className="mr-2 h-4 w-4" />
-        <SelectValue placeholder="Estado" />
+        <ShieldCheck className="mr-2 h-4 w-4" />
+        <SelectValue placeholder="Tipo de grupo" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">Todos los estados</SelectItem>
-        <SelectItem value="active">Activo</SelectItem>
-        <SelectItem value="inactive">Inactivo</SelectItem>
+        <SelectItem value="all">Todos</SelectItem>
+        <SelectItem value="reserved">Reservados</SelectItem>
+        <SelectItem value="available">Disponibles</SelectItem>
       </SelectContent>
     </Select>
 
-    <Select value={module} onValueChange={onModuleChange}>
-      <SelectTrigger
-        className="h-9 w-full lg:w-[190px] lg:shrink-0"
-        aria-label="Filtrar por módulo"
-      >
-        <Boxes className="mr-2 h-4 w-4" />
-        <SelectValue placeholder="Módulo" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">Todos los módulos</SelectItem>
-        {CITYPASS_MODULES.map((item) => (
-          <SelectItem key={item.id} value={item.id}>
-            {item.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    {isGeneralAdmin && (
+      <Select value={module} onValueChange={onModuleChange}>
+        <SelectTrigger
+          className="h-9 w-full lg:w-[190px] lg:shrink-0"
+          aria-label="Filtrar por módulo"
+        >
+          <Boxes className="mr-2 h-4 w-4" />
+          <SelectValue placeholder="Módulo" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos los módulos</SelectItem>
+          {CITYPASS_MODULES.map((item) => (
+            <SelectItem key={item.id} value={item.id}>
+              {item.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    )}
 
     <Button
       type="button"

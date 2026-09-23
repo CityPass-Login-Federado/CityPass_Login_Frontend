@@ -5,11 +5,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useGroups } from '../hooks/useGroups';
 import {
-  type GroupStatusFilter,
+  type GroupReservationFilter,
   type NoticeHandler,
   type PanelGroup,
 } from '../types';
 import { getPanelErrorMessage } from '../utils/errors';
+import { getReservedParam } from '../utils/groups';
 import { CreateGroupDialog } from './CreateGroupDialog';
 import { DeleteGroupAlertDialog } from './DeleteGroupAlertDialog';
 import { EditGroupDialog } from './EditGroupDialog';
@@ -19,27 +20,35 @@ import { SectionEmpty, SectionError, SectionLoading } from './SectionState';
 import { TablePagination } from './TablePagination';
 
 interface GroupsSectionProps {
+  isGeneralAdmin: boolean;
   onNotice: NoticeHandler;
 }
 
 const PAGE_SIZE = 8;
 
-export const GroupsSection = ({ onNotice }: GroupsSectionProps) => {
+export const GroupsSection = ({
+  isGeneralAdmin,
+  onNotice,
+}: GroupsSectionProps) => {
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState<GroupStatusFilter>('all');
+  const [reservation, setReservation] =
+    useState<GroupReservationFilter>('all');
   const [module, setModule] = useState('all');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<PanelGroup | null>(null);
   const [groupToDelete, setGroupToDelete] = useState<PanelGroup | null>(null);
   const debouncedSearch = useDebouncedValue(search);
-  const disabled = status === 'all' ? undefined : status === 'inactive';
+  const reserved = getReservedParam(reservation);
+  const selectedModule =
+    isGeneralAdmin && module !== 'all' ? module : undefined;
   const query = useGroups({
     page,
     size: PAGE_SIZE,
     search: debouncedSearch || undefined,
-    disabled,
-    module: module === 'all' ? undefined : module,
+    reserved,
+    module: selectedModule,
+    isGeneralAdmin,
   });
 
   const handleFilterChange = (callback: () => void) => {
@@ -56,13 +65,14 @@ export const GroupsSection = ({ onNotice }: GroupsSectionProps) => {
           </h2>
           <GroupFilters
             search={search}
-            status={status}
+            reservation={reservation}
             module={module}
+            isGeneralAdmin={isGeneralAdmin}
             onSearchChange={(value) =>
               handleFilterChange(() => setSearch(value))
             }
-            onStatusChange={(value) =>
-              handleFilterChange(() => setStatus(value))
+            onReservationChange={(value) =>
+              handleFilterChange(() => setReservation(value))
             }
             onModuleChange={(value) =>
               handleFilterChange(() => setModule(value))
@@ -85,6 +95,7 @@ export const GroupsSection = ({ onNotice }: GroupsSectionProps) => {
             <>
               <GroupsTable
                 groups={query.data.content}
+                isGeneralAdmin={isGeneralAdmin}
                 onEdit={setSelectedGroup}
                 onDelete={setGroupToDelete}
               />
@@ -103,6 +114,8 @@ export const GroupsSection = ({ onNotice }: GroupsSectionProps) => {
 
       <CreateGroupDialog
         open={isCreateOpen}
+        isGeneralAdmin={isGeneralAdmin}
+        initialModule={selectedModule}
         onOpenChange={setIsCreateOpen}
         onSuccess={(message) => onNotice('success', message)}
         onError={(message) => onNotice('error', message)}

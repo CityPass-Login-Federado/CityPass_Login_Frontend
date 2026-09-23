@@ -47,7 +47,11 @@ export const EditGroupDialog = ({
     if (!group || !memberToRemove) return;
 
     mutation.mutate(
-      { groupName: group.name, userId: memberToRemove },
+      {
+        groupName: group.name,
+        userId: memberToRemove,
+        module: group.module,
+      },
       {
         onSuccess: () => {
           setMemberToRemove(null);
@@ -74,8 +78,9 @@ export const EditGroupDialog = ({
               {group?.reserved && <Badge variant="secondary">Reservado</Badge>}
             </div>
             <DialogDescription>
-              El nombre del grupo es inmutable. Puede revisar y quitar miembros;
-              use la tarjeta de asignación para agregar nuevos.
+              El nombre del grupo es inmutable. Puede revisar y quitar miembros
+              {group?.module ? ` en ${group.module}` : ''}; use la tarjeta de
+              asignación para agregar nuevos.
             </DialogDescription>
           </DialogHeader>
 

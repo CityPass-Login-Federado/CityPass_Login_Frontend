@@ -21,7 +21,7 @@ const renderTable = (
   render(
     <UsersTable
       people={[person]}
-      groupNamesByUser={new Map([['jperez', ['soporte-n2']]])}
+      groupNamesByUser={new Map([['reclamos:jperez', ['soporte-n2']]])}
       groupDataStatus={groupDataStatus}
       isGeneralAdmin={isGeneralAdmin}
       onEdit={vi.fn()}

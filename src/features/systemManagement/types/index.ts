@@ -19,7 +19,6 @@ export interface PanelGroup {
   displayName?: string;
   members: string[];
   reserved: boolean;
-  disabled?: boolean;
   module?: string;
 }
 
@@ -49,6 +48,7 @@ export interface PeopleListParams {
   group?: string;
   disabled?: boolean;
   module?: string;
+  isGeneralAdmin?: boolean;
 }
 
 export interface GroupListParams {
@@ -56,8 +56,8 @@ export interface GroupListParams {
   size: number;
   search?: string;
   reserved?: boolean;
-  disabled?: boolean;
   module?: string;
+  isGeneralAdmin?: boolean;
 }
 
 export interface CreatePersonRequest {
@@ -66,6 +66,11 @@ export interface CreatePersonRequest {
   username: string;
   email: string;
   temporaryPassword: string;
+}
+
+export interface CreatePersonVariables {
+  data: CreatePersonRequest;
+  module?: string;
 }
 
 export interface UpdatePersonRequest {
@@ -78,20 +83,28 @@ export interface UpdatePersonRequest {
 export interface UpdatePersonVariables {
   uid: string;
   data: UpdatePersonRequest;
+  module?: string;
 }
 
 export interface PersonStatusVariables {
   uid: string;
   disabled: boolean;
+  module?: string;
 }
 
 export interface CreateGroupRequest {
   name: string;
 }
 
+export interface CreateGroupVariables {
+  data: CreateGroupRequest;
+  module?: string;
+}
+
 export interface AssignUserToGroupRequest {
   userId: string;
   groupName: string;
+  module?: string;
 }
 
 export type BulkMembershipStatus = 'SUCCESS' | 'PARTIAL' | 'FAILED';
@@ -104,6 +117,7 @@ export type MembershipOperationStatus =
 export interface BulkMembershipRequest {
   memberUids: string[];
   groupNames: string[];
+  module?: string;
 }
 
 export interface MembershipOperationResult {
@@ -131,11 +145,13 @@ export interface BulkMembershipResponse {
 
 export interface DeleteGroupRequest {
   groupName: string;
+  module?: string;
 }
 
 export interface RemoveGroupMemberRequest {
   userId: string;
   groupName: string;
+  module?: string;
 }
 
 export interface MembershipChangeResponse {
@@ -151,7 +167,7 @@ export interface PanelApiError {
 }
 
 export type PersonStatusFilter = 'all' | 'active' | 'inactive';
-export type GroupStatusFilter = 'all' | 'active' | 'inactive';
+export type GroupReservationFilter = 'all' | 'reserved' | 'available';
 
 export type NoticeKind = 'success' | 'error' | 'warning';
 export type NoticeHandler = (kind: NoticeKind, message: string) => void;

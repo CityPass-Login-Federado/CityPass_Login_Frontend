@@ -3,6 +3,16 @@ import { afterEach, describe, expect, test } from 'vitest';
 import { type AuthSession } from '../types';
 import { selectCanAccessPanel, useAuthStore } from './useAuthStore';
 
+const encode = (value: object) =>
+  window
+    .btoa(JSON.stringify(value))
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+
+const createToken = (payload: object) =>
+  `${encode({ alg: 'none' })}.${encode(payload)}.`;
+
 const moduleAdminSession: AuthSession = {
   userId: 'U000001',
   username: 'jperez',
@@ -45,5 +55,26 @@ describe('selectCanAccessPanel', () => {
         adminScope: 'GENERAL',
       }),
     ).toBe(true);
+  });
+
+  test('habilita el panel con el contrato real de admin-global', () => {
+    const token = createToken({
+      sub: 'U000007',
+      exp: Math.floor(Date.now() / 1000) + 900,
+      preferred_username: 'admin-global',
+      module: 'analitica',
+      groups: ['admin-global'],
+      aud: ['citypass-admin-api'],
+      token_use: 'human',
+      ver: 1,
+    });
+
+    useAuthStore.getState().setSessionFromToken(token);
+
+    expect(useAuthStore.getState().session).toMatchObject({
+      username: 'admin-global',
+      adminScope: 'GENERAL',
+    });
+    expect(selectCanAccessPanel(useAuthStore.getState())).toBe(true);
   });
 });

@@ -1,6 +1,7 @@
 import { type AuthSession, type JwtClaims } from '../types';
 
 const GENERAL_ADMIN_ROLES = new Set([
+  'admin-global',
   'admin-general',
   'admin_general',
   'administrador-general',

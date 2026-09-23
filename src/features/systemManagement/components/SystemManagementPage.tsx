@@ -19,7 +19,7 @@ export const SystemManagementPage = () => {
   return (
     <ManagementPageLayout
       title="Panel de Gestión del Sistema"
-      description="Gestiona usuarios y grupos, controla sus accesos y administra las membresías disponibles dentro de tu alcance."
+      description="Gestiona usuarios y grupos, controla sus accesos y administra las membresías disponibles."
     >
       <UsersSection
         isGeneralAdmin={isGeneralAdmin}
@@ -27,8 +27,14 @@ export const SystemManagementPage = () => {
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(380px,1fr)]">
-        <GroupsSection onNotice={handleNotice} />
-        <AssignUserToGroupCard onNotice={handleNotice} />
+        <GroupsSection
+          isGeneralAdmin={isGeneralAdmin}
+          onNotice={handleNotice}
+        />
+        <AssignUserToGroupCard
+          isGeneralAdmin={isGeneralAdmin}
+          onNotice={handleNotice}
+        />
       </div>
     </ManagementPageLayout>
   );

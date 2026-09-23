@@ -244,6 +244,7 @@ describe('auth runtime branches', () => {
 
   test('isGeneralAdminClaims acepta admin_scope, grupos y roles sin normalizar', () => {
     expect(isGeneralAdminClaims({ sub: 'U1', exp: 999, groups: ['delegados'] })).toBe(false);
+    expect(isGeneralAdminClaims({ sub: 'U1', exp: 999, groups: ['admin-global'] })).toBe(true);
     expect(isGeneralAdminClaims({ sub: 'U1', exp: 999, roles: ['administrador-general'] })).toBe(true);
     expect(isGeneralAdminClaims({ sub: 'U1', exp: 999, role: 'admin_general' })).toBe(true);
   });

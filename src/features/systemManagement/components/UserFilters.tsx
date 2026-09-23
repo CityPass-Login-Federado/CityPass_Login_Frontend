@@ -46,8 +46,8 @@ export const UserFilters = ({
   const groupNames = getUniqueGroupNames(groups);
 
   return (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-      <div className="relative min-w-0 lg:w-64">
+    <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center">
+      <div className="relative min-w-0 lg:min-w-52 lg:flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={search}
@@ -111,7 +111,11 @@ export const UserFilters = ({
         )}
       </div>
 
-      <Button type="button" className="lg:ml-auto" onClick={onAddUser}>
+      <Button
+        type="button"
+        className="w-full shrink-0 lg:ml-auto lg:w-auto"
+        onClick={onAddUser}
+      >
         <Plus className="mr-2 h-4 w-4" />
         Agregar usuario
       </Button>

@@ -10,6 +10,7 @@ const usernameSchema = z
   );
 
 export const personFormSchema = z.object({
+  module: z.string().optional(),
   givenName: z.string().trim().min(1, 'El nombre es obligatorio'),
   sn: z.string().trim().min(1, 'El apellido es obligatorio'),
   username: usernameSchema,
@@ -25,6 +26,7 @@ export const personFormSchema = z.object({
 export type PersonFormValues = z.infer<typeof personFormSchema>;
 
 export const groupFormSchema = z.object({
+  module: z.string().optional(),
   name: z
     .string()
     .min(1, 'El nombre es obligatorio')

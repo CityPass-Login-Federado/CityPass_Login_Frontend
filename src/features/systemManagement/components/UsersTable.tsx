@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table';
 
 import { type PanelPerson } from '../types';
+import { getScopedMemberKey } from '../utils/groups';
 import { getModuleName } from '../utils/modules';
 
 interface UsersTableProps {
@@ -47,7 +48,10 @@ export const UsersTable = ({
       </TableHeader>
       <TableBody>
         {people.map((person) => {
-          const groups = groupNamesByUser.get(person.uid) ?? [];
+          const groups =
+            groupNamesByUser.get(
+              getScopedMemberKey(person.uid, person.module),
+            ) ?? [];
           const groupLabel =
             groupDataStatus === 'loading'
               ? 'Cargando grupos…'
@@ -57,7 +61,9 @@ export const UsersTable = ({
                   ? groups.join(', ')
                   : 'Sin grupo';
           return (
-            <TableRow key={person.employeeNumber}>
+            <TableRow
+              key={`${person.module ?? 'scoped'}-${person.employeeNumber}`}
+            >
               <TableCell>
                 <div className="font-medium">
                   {person.givenName} {person.sn}
