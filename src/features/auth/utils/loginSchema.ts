@@ -17,7 +17,6 @@ export const loginSchema = z.object({
     .max(128, 'La contraseña no puede superar los 128 caracteres')
     .regex(/[a-z]/, 'Debe contener al menos una letra minúscula')
     .regex(/[0-9]/, 'Debe contener al menos un número'),
-  rememberMe: z.boolean().default(false),
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;

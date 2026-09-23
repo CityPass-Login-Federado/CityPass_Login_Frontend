@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { Toaster } from '@/components/ui/sonner';
 import { LoginPage } from '@/features/auth/components/LoginPage';
@@ -12,22 +12,14 @@ import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { SystemManagementPage } from '@/features/systemManagement/components/SystemManagementPage';
 import { GroupsManagementPage } from '@/features/systemManagement/components/GroupsManagementPage';
 import { UsersManagementPage } from '@/features/systemManagement/components/UsersManagementPage';
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+import { queryClient } from '@/lib/queryClient';
 
 export const App = () => {
-  const hydrateSession = useAuthStore((state) => state.hydrateSession);
+  const initializeSession = useAuthStore((state) => state.initializeSession);
 
   useEffect(() => {
-    hydrateSession();
-  }, [hydrateSession]);
+    initializeSession();
+  }, [initializeSession]);
 
   return (
     <QueryClientProvider client={queryClient}>

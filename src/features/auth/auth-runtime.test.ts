@@ -1,26 +1,40 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, waitFor } from '@testing-library/react';
-import type { InternalAxiosRequestConfig } from 'axios';
+import { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { createElement, useEffect } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
-import { axiosInstance } from '@/lib/axios';
+import { authAxiosInstance, axiosInstance } from '@/lib/axios';
 import * as loginApi from './api/login';
 import * as logoutApi from './api/logout';
 import * as passwordApi from './api/password';
 import { useLogin } from './hooks/useLogin';
+import { establishSession } from './session/sessionManager';
+import {
+  clearAuthTokens,
+  getAccessToken,
+  getRefreshToken,
+  setAuthTokens,
+} from './session/tokenVault';
 import { useAuthStore } from './store/useAuthStore';
 import { buildSessionFromToken, decodeJwtClaims, isGeneralAdminClaims } from './utils/jwt';
 
 const encode = (value: object) =>
   window.btoa(JSON.stringify(value)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 
-const createToken = (payload: object) => `${encode({ alg: 'none' })}.${encode(payload)}.`;
+const createToken = (payload: object) =>
+  `${encode({ alg: 'none' })}.${encode({
+    aud: ['citypass-admin-api'],
+    token_use: 'human',
+    ver: 1,
+    ...payload,
+  })}.`;
 
 describe('auth runtime branches', () => {
   afterEach(() => {
     localStorage.clear();
+    clearAuthTokens();
     vi.restoreAllMocks();
     useAuthStore.setState({ session: null, isHydrated: false });
   });
@@ -54,7 +68,7 @@ describe('auth runtime branches', () => {
     expect(buildSessionFromToken('abc.def')).toBeNull();
   });
 
-  test('useAuthStore persiste e hidrata la sesión correctamente', () => {
+  test('la sesión y los tokens viven únicamente en memoria', () => {
     const token = createToken({
       sub: 'U555',
       exp: Math.floor(Date.now() / 1000) + 900,
@@ -62,32 +76,43 @@ describe('auth runtime branches', () => {
       groups: ['delegados'],
     });
 
-    useAuthStore.getState().setSessionFromToken(token);
-    expect(useAuthStore.getState().session?.userId).toBe('U555');
+    establishSession({
+      access_token: token,
+      refresh_token: 'refresh-memory',
+      token_type: 'Bearer',
+      expires_in: 900,
+    });
 
-    localStorage.setItem('access_token', token);
-    useAuthStore.getState().hydrateSession();
-    expect(useAuthStore.getState().session?.username).toBe('user1');
+    expect(useAuthStore.getState().session?.userId).toBe('U555');
+    expect(getAccessToken()).toBe(token);
+    expect(getRefreshToken()).toBe('refresh-memory');
+    expect(localStorage.getItem('access_token')).toBeNull();
+    expect(localStorage.getItem('refresh_token')).toBeNull();
 
     useAuthStore.getState().clearSession();
     expect(useAuthStore.getState().session).toBeNull();
-    expect(localStorage.getItem('access_token')).toBeNull();
+    expect(getAccessToken()).toBeNull();
+    expect(getRefreshToken()).toBeNull();
   });
 
-  test('hydrateSession limpia tokens inválidos en localStorage', () => {
+  test('initializeSession elimina tokens heredados y no restaura la sesión', () => {
     localStorage.setItem('access_token', 'bad-token');
     localStorage.setItem('refresh_token', 'bad-refresh');
+    setAuthTokens('memory-access', 'memory-refresh');
 
-    useAuthStore.getState().hydrateSession();
+    useAuthStore.getState().initializeSession();
 
     expect(useAuthStore.getState().session).toBeNull();
+    expect(useAuthStore.getState().isHydrated).toBe(true);
+    expect(getAccessToken()).toBeNull();
+    expect(getRefreshToken()).toBeNull();
     expect(localStorage.getItem('access_token')).toBeNull();
     expect(localStorage.getItem('refresh_token')).toBeNull();
   });
 
   test('axios agrega Authorization solo para llamadas autenticadas', async () => {
     const token = 'abc123';
-    localStorage.setItem('access_token', token);
+    setAuthTokens(token, 'refresh-123');
 
     const requestHandlers = axiosInstance.interceptors.request.handlers ?? [];
     const requestInterceptor = requestHandlers[0];
@@ -134,6 +159,114 @@ describe('auth runtime branches', () => {
     }
 
     await expect(rejected(error)).rejects.toBe(error);
+  });
+
+  test('axios comparte un único refresh preventivo entre requests concurrentes', async () => {
+    const currentToken = createToken({
+      sub: 'U1',
+      exp: Math.floor(Date.now() / 1000) + 1,
+      groups: ['delegados'],
+      module: 'reclamos',
+    });
+    const rotatedToken = createToken({
+      sub: 'U1',
+      exp: Math.floor(Date.now() / 1000) + 900,
+      groups: ['delegados'],
+      module: 'reclamos',
+    });
+
+    establishSession({
+      access_token: currentToken,
+      refresh_token: 'refresh-current',
+      token_type: 'Bearer',
+      expires_in: 1,
+    });
+    const refreshSpy = vi.spyOn(authAxiosInstance, 'post').mockResolvedValue({
+      data: {
+        access_token: rotatedToken,
+        refresh_token: 'refresh-rotated',
+        token_type: 'Bearer',
+        expires_in: 900,
+      },
+    } as Awaited<ReturnType<typeof authAxiosInstance.post>>);
+
+    const requestInterceptor = axiosInstance.interceptors.request.handlers?.[0];
+    expect(requestInterceptor).toBeDefined();
+
+    const [first, second] = await Promise.all([
+      requestInterceptor!.fulfilled({
+        url: '/panel/people',
+        headers: {},
+      } as InternalAxiosRequestConfig),
+      requestInterceptor!.fulfilled({
+        url: '/panel/groups',
+        headers: {},
+      } as InternalAxiosRequestConfig),
+    ]);
+
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+    expect(refreshSpy).toHaveBeenCalledWith('/auth/refresh', {
+      refreshToken: 'refresh-current',
+    });
+    expect(first.headers.Authorization).toBe(`Bearer ${rotatedToken}`);
+    expect(second.headers.Authorization).toBe(`Bearer ${rotatedToken}`);
+    expect(getRefreshToken()).toBe('refresh-rotated');
+  });
+
+  test('un 401 renueva la sesión y reintenta la petición una sola vez', async () => {
+    const oldToken = createToken({
+      sub: 'U1',
+      exp: Math.floor(Date.now() / 1000) + 900,
+    });
+    const newToken = createToken({
+      sub: 'U1',
+      exp: Math.floor(Date.now() / 1000) + 900,
+    });
+    establishSession({
+      access_token: oldToken,
+      refresh_token: 'refresh-old',
+      token_type: 'Bearer',
+      expires_in: 900,
+    });
+
+    vi.spyOn(authAxiosInstance, 'post').mockResolvedValue({
+      data: {
+        access_token: newToken,
+        refresh_token: 'refresh-new',
+        token_type: 'Bearer',
+        expires_in: 900,
+      },
+    } as Awaited<ReturnType<typeof authAxiosInstance.post>>);
+    const retrySpy = vi.spyOn(axiosInstance, 'request').mockResolvedValue({
+      data: { ok: true },
+    } as Awaited<ReturnType<typeof axiosInstance.request>>);
+
+    const config = {
+      url: '/panel/people',
+      headers: { Authorization: `Bearer ${oldToken}` },
+    } as InternalAxiosRequestConfig;
+    const unauthorized = new AxiosError(
+      'Unauthorized',
+      'ERR_BAD_RESPONSE',
+      config,
+      undefined,
+      {
+        data: undefined,
+        status: 401,
+        statusText: 'Unauthorized',
+        headers: {},
+        config,
+      },
+    );
+    const responseInterceptor = axiosInstance.interceptors.response.handlers?.[0];
+
+    await expect(responseInterceptor!.rejected!(unauthorized)).resolves.toMatchObject({
+      data: { ok: true },
+    });
+    expect(retrySpy).toHaveBeenCalledTimes(1);
+    expect(retrySpy.mock.calls[0]?.[0]).toMatchObject({
+      headers: { Authorization: `Bearer ${newToken}` },
+    });
   });
 
   test('loginUser envía la petición de login y devuelve el payload', async () => {
@@ -237,7 +370,10 @@ describe('auth runtime branches', () => {
     );
 
     await waitFor(() => {
-      expect(localStorage.getItem('access_token')).toBe(token);
+      expect(getAccessToken()).toBe(token);
+      expect(getRefreshToken()).toBe('refresh-abc');
+      expect(localStorage.getItem('access_token')).toBeNull();
+      expect(localStorage.getItem('refresh_token')).toBeNull();
       expect(useAuthStore.getState().session?.userId).toBe('U777');
     });
   });

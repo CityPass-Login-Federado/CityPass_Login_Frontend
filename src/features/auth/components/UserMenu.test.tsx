@@ -6,6 +6,12 @@ import { toast } from 'sonner';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { logoutUser } from '../api/logout';
+import {
+  clearAuthTokens,
+  getAccessToken,
+  getRefreshToken,
+  setAuthTokens,
+} from '../session/tokenVault';
 import { useAuthStore } from '../store/useAuthStore';
 import { UserMenu } from './UserMenu';
 
@@ -31,8 +37,7 @@ const setAuthenticatedSession = () => {
     },
     isHydrated: true,
   });
-  localStorage.setItem('access_token', 'access-1');
-  localStorage.setItem('refresh_token', 'refresh-1');
+  setAuthTokens('access-1', 'refresh-1');
 };
 
 const renderUserMenu = (queryClient: QueryClient) =>
@@ -57,6 +62,7 @@ describe('UserMenu', () => {
   afterEach(() => {
     cleanup();
     localStorage.clear();
+    clearAuthTokens();
     useAuthStore.setState({ session: null, isHydrated: false });
   });
 
@@ -112,8 +118,8 @@ describe('UserMenu', () => {
 
     await screen.findByText('Pantalla de acceso');
     expect(logoutUser).toHaveBeenCalledWith({ refreshToken: 'refresh-1' });
-    expect(localStorage.getItem('access_token')).toBeNull();
-    expect(localStorage.getItem('refresh_token')).toBeNull();
+    expect(getAccessToken()).toBeNull();
+    expect(getRefreshToken()).toBeNull();
     expect(useAuthStore.getState().session).toBeNull();
     expect(queryClient.getQueryData(['private-data'])).toBeUndefined();
   });
@@ -133,8 +139,8 @@ describe('UserMenu', () => {
 
     await screen.findByText('Pantalla de acceso');
     await waitFor(() => expect(toast.warning).toHaveBeenCalledTimes(1));
-    expect(localStorage.getItem('access_token')).toBeNull();
-    expect(localStorage.getItem('refresh_token')).toBeNull();
+    expect(getAccessToken()).toBeNull();
+    expect(getRefreshToken()).toBeNull();
     expect(useAuthStore.getState().session).toBeNull();
   });
 });

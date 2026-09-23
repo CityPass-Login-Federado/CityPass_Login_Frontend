@@ -46,6 +46,7 @@ describe('LoginForm Component', () => {
     expect(screen.getByLabelText(/usuario/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /ingresar/i })).toBeInTheDocument();
+    expect(screen.queryByText(/recordarme/i)).not.toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: /olvidaste tu contraseña/i }),
     ).toHaveAttribute('href', '/forgot-password');
