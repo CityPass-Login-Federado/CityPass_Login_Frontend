@@ -4,6 +4,14 @@ import { Controller, useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 import { useAssignUsersToGroups, useGroups } from '../hooks/useGroups';
@@ -18,6 +26,7 @@ import {
 } from '../types';
 import { getPanelErrorMessage } from '../utils/errors';
 import { getGroupDisplayName } from '../utils/groups';
+import { CITYPASS_MODULES } from '../utils/modules';
 import {
   CheckboxMultiSelect,
   type CheckboxMultiSelectOption,
@@ -26,12 +35,15 @@ import {
 const MAX_BULK_MEMBERSHIPS = 1000;
 
 interface AssignUserToGroupCardProps {
+  isGeneralAdmin: boolean;
   onNotice: NoticeHandler;
 }
 
 export const AssignUserToGroupCard = ({
+  isGeneralAdmin,
   onNotice,
 }: AssignUserToGroupCardProps) => {
+  const [module, setModule] = useState('');
   const [lastResponse, setLastResponse] =
     useState<BulkMembershipResponse | null>(null);
   const {
@@ -46,11 +58,25 @@ export const AssignUserToGroupCard = ({
   });
   const memberUids = watch('memberUids');
   const groupNames = watch('groupNames');
+  const selectedModule = isGeneralAdmin ? module || undefined : undefined;
+  const hasModuleScope = !isGeneralAdmin || Boolean(selectedModule);
   const peopleQuery = usePeople(
-    { page: 0, size: 1000 },
+    {
+      page: 0,
+      size: 1000,
+      module: selectedModule,
+      isGeneralAdmin,
+    },
+    { enabled: hasModuleScope },
   );
   const groupsQuery = useGroups(
-    { page: 0, size: 1000 },
+    {
+      page: 0,
+      size: 1000,
+      module: selectedModule,
+      isGeneralAdmin,
+    },
+    { enabled: hasModuleScope },
   );
   const mutation = useAssignUsersToGroups();
 
@@ -78,13 +104,20 @@ export const AssignUserToGroupCard = ({
   const assignmentCount = memberUids.length * groupNames.length;
   const exceedsBulkLimit = assignmentCount > MAX_BULK_MEMBERSHIPS;
   const isLoading =
-    peopleQuery.isPending ||
-    peopleQuery.isPlaceholderData ||
-    groupsQuery.isPending ||
-    groupsQuery.isPlaceholderData;
+    hasModuleScope &&
+    (peopleQuery.isPending ||
+      peopleQuery.isPlaceholderData ||
+      groupsQuery.isPending ||
+      groupsQuery.isPlaceholderData);
   const hasLoadError = peopleQuery.isError || groupsQuery.isError;
   const selectionDisabled =
-    isLoading || hasLoadError || mutation.isPending;
+    !hasModuleScope || isLoading || hasLoadError || mutation.isPending;
+
+  const handleModuleChange = (value: string) => {
+    setModule(value);
+    reset({ memberUids: [], groupNames: [] });
+    setLastResponse(null);
+  };
 
   const handleFormSubmit = (values: AssignmentFormValues) => {
     setLastResponse(null);
@@ -92,6 +125,7 @@ export const AssignUserToGroupCard = ({
       {
         memberUids: values.memberUids,
         groupNames: values.groupNames,
+        module: selectedModule,
       },
       {
         onSuccess: (response) => {
@@ -143,6 +177,33 @@ export const AssignUserToGroupCard = ({
         </CardHeader>
         <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
           <form className="space-y-4" onSubmit={handleSubmit(handleFormSubmit)}>
+            {isGeneralAdmin && (
+              <div className="space-y-2">
+                <Label htmlFor="assignmentModule">Módulo</Label>
+                <Select value={module} onValueChange={handleModuleChange}>
+                  <SelectTrigger
+                    id="assignmentModule"
+                    aria-label="Seleccionar módulo para asignaciones"
+                    disabled={mutation.isPending}
+                  >
+                    <SelectValue placeholder="Seleccione un módulo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CITYPASS_MODULES.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!selectedModule && (
+                  <p className="text-xs text-muted-foreground">
+                    Seleccione un módulo para cargar sus usuarios y grupos.
+                  </p>
+                )}
+              </div>
+            )}
+
             <Controller
               name="memberUids"
               control={control}
@@ -209,6 +270,7 @@ export const AssignUserToGroupCard = ({
               className="w-full"
               disabled={
                 assignmentCount === 0 ||
+                !hasModuleScope ||
                 exceedsBulkLimit ||
                 isLoading ||
                 hasLoadError ||

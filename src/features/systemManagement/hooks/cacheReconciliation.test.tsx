@@ -144,11 +144,13 @@ describe('reconciliación de cachés del panel', () => {
 
     await act(async () => {
       await result.current.mutateAsync({
-        givenName: 'Juan',
-        sn: 'Pérez',
-        username: 'jperez',
-        email: 'jperez@citypass.local',
-        temporaryPassword: 'Temporal123!',
+        data: {
+          givenName: 'Juan',
+          sn: 'Pérez',
+          username: 'jperez',
+          email: 'jperez@citypass.local',
+          temporaryPassword: 'Temporal123!',
+        },
       });
     });
 
@@ -254,7 +256,7 @@ describe('reconciliación de cachés del panel', () => {
 
     await act(async () => {
       await expect(
-        result.current.mutateAsync({ name: 'auditoria' }),
+        result.current.mutateAsync({ data: { name: 'auditoria' } }),
       ).rejects.toBe(backendError);
     });
 

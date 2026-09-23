@@ -16,6 +16,7 @@ describe('GroupsTable', () => {
     render(
       <GroupsTable
         groups={[group]}
+        isGeneralAdmin={false}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
       />,
@@ -33,8 +34,10 @@ describe('GroupsTable', () => {
     expect(
       screen.queryByRole('columnheader', { name: 'Número de Grupo' }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('columnheader', { name: 'Estado' }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText('Disponible')).toBeInTheDocument();
-    expect(screen.getByText('Activo')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Modificar soporte-n2' }),
     ).toBeInTheDocument();
@@ -50,6 +53,7 @@ describe('GroupsTable', () => {
     render(
       <GroupsTable
         groups={[{ ...group, reserved: true }]}
+        isGeneralAdmin={false}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
       />,
@@ -58,5 +62,21 @@ describe('GroupsTable', () => {
     const groupRow = screen.getAllByRole('row')[1];
 
     expect(within(groupRow).getByText('Reservado')).toBeInTheDocument();
+  });
+
+  test('muestra el módulo para el administrador global', () => {
+    render(
+      <GroupsTable
+        groups={[group]}
+        isGeneralAdmin
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole('columnheader', { name: 'Módulo' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Reclamos')).toBeInTheDocument();
   });
 });

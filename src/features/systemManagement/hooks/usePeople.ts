@@ -12,7 +12,7 @@ import {
   updatePerson,
 } from '../api/panelApi';
 import {
-  type CreatePersonRequest,
+  type CreatePersonVariables,
   type PeopleListParams,
   type PersonStatusVariables,
   type UpdatePersonVariables,
@@ -35,7 +35,7 @@ export const useCreatePerson = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreatePersonRequest) => createPerson(data),
+    mutationFn: (variables: CreatePersonVariables) => createPerson(variables),
     onSettled: () => reconcilePeopleAndGroups(queryClient),
   });
 };

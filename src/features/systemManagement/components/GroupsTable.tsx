@@ -13,15 +13,18 @@ import {
 
 import { type PanelGroup } from '../types';
 import { getGroupDisplayName } from '../utils/groups';
+import { getModuleName } from '../utils/modules';
 
 interface GroupsTableProps {
   groups: PanelGroup[];
+  isGeneralAdmin: boolean;
   onEdit: (group: PanelGroup) => void;
   onDelete: (group: PanelGroup) => void;
 }
 
 export const GroupsTable = ({
   groups,
+  isGeneralAdmin,
   onEdit,
   onDelete,
 }: GroupsTableProps) => (
@@ -31,8 +34,10 @@ export const GroupsTable = ({
         <TableRow className="border-slate-950 hover:bg-slate-950">
           <TableHead className="min-w-44 text-white">Nombre</TableHead>
           <TableHead className="min-w-40 text-white">Cantidad de Usuarios</TableHead>
+          {isGeneralAdmin && (
+            <TableHead className="min-w-36 text-white">Módulo</TableHead>
+          )}
           <TableHead className="min-w-28 text-white">Reservado</TableHead>
-          <TableHead className="min-w-28 text-white">Estado</TableHead>
           <TableHead className="text-right text-white">Acciones</TableHead>
         </TableRow>
       </TableHeader>
@@ -43,14 +48,12 @@ export const GroupsTable = ({
               {getGroupDisplayName(group)}
             </TableCell>
             <TableCell>{group.members.length}</TableCell>
+            {isGeneralAdmin && (
+              <TableCell>{getModuleName(group.module)}</TableCell>
+            )}
             <TableCell>
               <Badge variant={group.reserved ? 'secondary' : 'default'}>
                 {group.reserved ? 'Reservado' : 'Disponible'}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <Badge variant={group.disabled ? 'destructive' : 'success'}>
-                {group.disabled ? 'Inactivo' : 'Activo'}
               </Badge>
             </TableCell>
             <TableCell className="text-right">

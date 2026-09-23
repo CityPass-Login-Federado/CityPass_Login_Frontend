@@ -15,7 +15,7 @@ export const UsersManagementPage = () => {
   const isGeneralAdmin = useAuthStore(selectIsGeneralAdmin);
   const handleNotice: NoticeHandler = (kind, message) => toast[kind](message);
   const description = isGeneralAdmin
-    ? 'Gestiona todos los usuarios del sistema y filtra el listado por módulo.'
+    ? 'Gestiona todos los usuarios desde un único lugar.'
     : `Gestiona los usuarios disponibles en ${getModuleName(session?.module)}.`;
 
   return (

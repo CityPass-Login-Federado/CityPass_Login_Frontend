@@ -16,7 +16,7 @@ import {
 import {
   type AssignUserToGroupRequest,
   type BulkMembershipRequest,
-  type CreateGroupRequest,
+  type CreateGroupVariables,
   type DeleteGroupRequest,
   type GroupListParams,
   type RemoveGroupMemberRequest,
@@ -42,7 +42,7 @@ export const useCreateGroup = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreateGroupRequest) => createGroup(data),
+    mutationFn: (variables: CreateGroupVariables) => createGroup(variables),
     onSettled: () => reconcileGroups(queryClient),
   });
 };

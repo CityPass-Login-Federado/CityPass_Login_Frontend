@@ -21,6 +21,7 @@ import {
   type PersonStatusFilter,
 } from '../types';
 import { getPanelErrorMessage } from '../utils/errors';
+import { getScopedMemberKey } from '../utils/groups';
 import { PersonFormDialog } from './PersonFormDialog';
 import { SectionEmpty, SectionError, SectionLoading } from './SectionState';
 import { TablePagination } from './TablePagination';
@@ -59,11 +60,13 @@ export const UsersSection = ({
     group: group === 'all' ? undefined : group,
     disabled,
     module: selectedModule,
+    isGeneralAdmin,
   });
   const groupsQuery = useGroups({
     page: 0,
     size: 1000,
     module: selectedModule,
+    isGeneralAdmin,
   });
   const statusMutation = useSetPersonStatus();
   const groupDataStatus = groupsQuery.isError
@@ -76,7 +79,8 @@ export const UsersSection = ({
     const membership = new Map<string, string[]>();
     for (const item of groupsQuery.data?.content ?? []) {
       for (const member of item.members) {
-        membership.set(member, [...(membership.get(member) ?? []), item.name]);
+        const key = getScopedMemberKey(member, item.module);
+        membership.set(key, [...(membership.get(key) ?? []), item.name]);
       }
     }
     return membership;
@@ -101,7 +105,11 @@ export const UsersSection = ({
     if (!statusPerson) return;
     const shouldDisable = !statusPerson.disabled;
     statusMutation.mutate(
-      { uid: statusPerson.uid, disabled: shouldDisable },
+      {
+        uid: statusPerson.uid,
+        disabled: shouldDisable,
+        module: statusPerson.module,
+      },
       {
         onSuccess: () => {
           onNotice(
@@ -203,6 +211,8 @@ export const UsersSection = ({
       <PersonFormDialog
         open={isPersonDialogOpen}
         person={selectedPerson}
+        isGeneralAdmin={isGeneralAdmin}
+        initialModule={selectedModule}
         onOpenChange={setIsPersonDialogOpen}
         onSuccess={(message) => onNotice('success', message)}
         onError={(message) => onNotice('error', message)}
@@ -221,8 +231,8 @@ export const UsersSection = ({
             </AlertDialogTitle>
             <AlertDialogDescription>
               {statusPerson?.disabled
-                ? `${statusPerson.uid} recuperará el acceso con sus grupos intactos.`
-                : `${statusPerson?.uid} perderá el acceso y se revocarán sus sesiones activas. Su identidad no será eliminada.`}
+                ? `${statusPerson.uid} recuperará el acceso con sus grupos intactos${statusPerson.module ? ` en ${statusPerson.module}` : ''}.`
+                : `${statusPerson?.uid} perderá el acceso${statusPerson?.module ? ` en ${statusPerson.module}` : ''} y se revocarán sus sesiones activas. Su identidad no será eliminada.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

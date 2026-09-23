@@ -1,9 +1,14 @@
 import { buildSessionFromToken, decodeJwtClaims, isGeneralAdminClaims } from './jwt';
 
 const encode = (value: object) =>
-  window.btoa(JSON.stringify(value)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  window
+    .btoa(JSON.stringify(value))
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
 
-const createToken = (payload: object) => `${encode({ alg: 'none' })}.${encode(payload)}.`;
+const createToken = (payload: object) =>
+  `${encode({ alg: 'none' })}.${encode(payload)}.`;
 
 describe('JWT session helpers', () => {
   test('reconoce al delegado del grupo 2 como administrador de módulo', () => {
@@ -22,15 +27,36 @@ describe('JWT session helpers', () => {
     });
   });
 
-  test('requiere un claim o rol explícito para Admin General', () => {
+  test('reconoce el grupo admin-global emitido por el backend', () => {
     expect(
       isGeneralAdminClaims({
         sub: 'U000099',
         exp: Math.floor(Date.now() / 1000) + 900,
-        groups: ['admin-general'],
+        groups: ['admin-global'],
       }),
     ).toBe(true);
 
+    const token = createToken({
+      sub: 'U000007',
+      exp: Math.floor(Date.now() / 1000) + 900,
+      preferred_username: 'admin-global',
+      module: 'analitica',
+      groups: ['admin-global'],
+      aud: ['citypass-admin-api'],
+      token_use: 'human',
+      ver: 1,
+    });
+
+    expect(buildSessionFromToken(token)).toMatchObject({
+      userId: 'U000007',
+      username: 'admin-global',
+      module: 'analitica',
+      groups: ['admin-global'],
+      adminScope: 'GENERAL',
+    });
+  });
+
+  test('mantiene compatibilidad con los aliases de administrador general', () => {
     expect(
       isGeneralAdminClaims({
         sub: 'U000100',

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -72,10 +72,28 @@ describe('AssignUserToGroupCard', () => {
   });
 
   test('consulta las opciones del alcance del token', () => {
-    render(<AssignUserToGroupCard onNotice={vi.fn()} />);
+    render(
+      <AssignUserToGroupCard isGeneralAdmin={false} onNotice={vi.fn()} />,
+    );
 
-    expect(mocks.usePeople).toHaveBeenCalledWith({ page: 0, size: 1000 });
-    expect(mocks.useGroups).toHaveBeenCalledWith({ page: 0, size: 1000 });
+    expect(mocks.usePeople).toHaveBeenCalledWith(
+      {
+        page: 0,
+        size: 1000,
+        module: undefined,
+        isGeneralAdmin: false,
+      },
+      { enabled: true },
+    );
+    expect(mocks.useGroups).toHaveBeenCalledWith(
+      {
+        page: 0,
+        size: 1000,
+        module: undefined,
+        isGeneralAdmin: false,
+      },
+      { enabled: true },
+    );
     expect(
       screen.getByRole('button', { name: 'Asignar usuarios a grupos' }),
     ).toBeDisabled();
@@ -99,7 +117,9 @@ describe('AssignUserToGroupCard', () => {
       });
     });
 
-    render(<AssignUserToGroupCard onNotice={onNotice} />);
+    render(
+      <AssignUserToGroupCard isGeneralAdmin={false} onNotice={onNotice} />,
+    );
 
     await user.click(screen.getByRole('checkbox', { name: /Ana López/ }));
     await user.click(screen.getByRole('checkbox', { name: /Luis Pérez/ }));
@@ -113,6 +133,7 @@ describe('AssignUserToGroupCard', () => {
       {
         memberUids: ['ana', 'luis'],
         groupNames: ['soporte', 'auditoria'],
+        module: undefined,
       },
       expect.objectContaining({
         onSuccess: expect.any(Function),
@@ -161,7 +182,9 @@ describe('AssignUserToGroupCard', () => {
       });
     });
 
-    render(<AssignUserToGroupCard onNotice={onNotice} />);
+    render(
+      <AssignUserToGroupCard isGeneralAdmin={false} onNotice={onNotice} />,
+    );
 
     await user.click(screen.getByRole('checkbox', { name: /Ana López/ }));
     await user.click(screen.getByRole('checkbox', { name: /soporte/i }));
@@ -196,9 +219,60 @@ describe('AssignUserToGroupCard', () => {
     mocks.usePeople.mockReturnValue(placeholderQuery);
     mocks.useGroups.mockReturnValue(placeholderQuery);
 
-    render(<AssignUserToGroupCard onNotice={vi.fn()} />);
+    render(
+      <AssignUserToGroupCard isGeneralAdmin={false} onNotice={vi.fn()} />,
+    );
 
     expect(screen.getByLabelText('Buscar usuarios…')).toBeDisabled();
     expect(screen.getByLabelText('Buscar grupos…')).toBeDisabled();
+  });
+
+  test('exige un módulo y lo propaga para el administrador global', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <AssignUserToGroupCard isGeneralAdmin onNotice={vi.fn()} />,
+    );
+
+    expect(mocks.usePeople).toHaveBeenLastCalledWith(
+      {
+        page: 0,
+        size: 1000,
+        module: undefined,
+        isGeneralAdmin: true,
+      },
+      { enabled: false },
+    );
+    expect(screen.getByLabelText('Buscar usuarios…')).toBeDisabled();
+
+    const nativeModuleSelect = container.querySelector('select');
+    expect(nativeModuleSelect).not.toBeNull();
+    fireEvent.change(nativeModuleSelect!, { target: { value: 'reclamos' } });
+
+    await waitFor(() =>
+      expect(mocks.usePeople).toHaveBeenLastCalledWith(
+        {
+          page: 0,
+          size: 1000,
+          module: 'reclamos',
+          isGeneralAdmin: true,
+        },
+        { enabled: true },
+      ),
+    );
+
+    await user.click(screen.getByRole('checkbox', { name: /Ana López/ }));
+    await user.click(screen.getByRole('checkbox', { name: /soporte/i }));
+    await user.click(
+      screen.getByRole('button', { name: 'Realizar 1 asignación' }),
+    );
+
+    expect(mocks.mutate).toHaveBeenCalledWith(
+      {
+        memberUids: ['ana'],
+        groupNames: ['soporte'],
+        module: 'reclamos',
+      },
+      expect.any(Object),
+    );
   });
 });

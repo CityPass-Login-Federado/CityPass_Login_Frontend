@@ -32,7 +32,7 @@ export const DeleteGroupAlertDialog = ({
     if (!group) return;
 
     mutation.mutate(
-      { groupName: group.name },
+      { groupName: group.name, module: group.module },
       {
         onSuccess: () => {
           onOpenChange(false);
@@ -52,8 +52,10 @@ export const DeleteGroupAlertDialog = ({
         <AlertDialogHeader>
           <AlertDialogTitle>¿Eliminar grupo?</AlertDialogTitle>
           <AlertDialogDescription>
-            El grupo {group?.name} será eliminado. Esta acción puede afectar el
-            acceso de sus usuarios y no se puede deshacer.
+            El grupo {group?.name}
+            {group?.module ? ` del módulo ${group.module}` : ''} será eliminado.
+            Esta acción puede afectar el acceso de sus usuarios y no se puede
+            deshacer.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

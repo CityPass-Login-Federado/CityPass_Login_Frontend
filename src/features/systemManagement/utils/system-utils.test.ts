@@ -6,7 +6,7 @@ import { AxiosError, type AxiosResponse } from 'axios';
 import { describe, expect, test, vi } from 'vitest';
 
 import { getPanelErrorMessage } from './errors';
-import { getUniqueGroupNames } from './groups';
+import { getReservedParam, getUniqueGroupNames } from './groups';
 import { getModuleName, CITYPASS_MODULES } from './modules';
 import { normalizePaginatedResponse } from './pagination';
 import { panelQueryKeys } from './queryKeys';
@@ -73,6 +73,12 @@ describe('system management utils', () => {
         { name: 'soporte', members: [], reserved: true },
       ]),
     ).toEqual(['analitica', 'soporte']);
+  });
+
+  test('getReservedParam traduce el filtro al contrato del backend', () => {
+    expect(getReservedParam('all')).toBeUndefined();
+    expect(getReservedParam('reserved')).toBe(true);
+    expect(getReservedParam('available')).toBe(false);
   });
 
   test('getModuleName devuelve label por id y fallback por nombre no registrado', () => {
