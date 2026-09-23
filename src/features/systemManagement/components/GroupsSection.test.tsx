@@ -19,10 +19,6 @@ vi.mock('./EditGroupDialog', () => ({
   EditGroupDialog: () => null,
 }));
 
-vi.mock('./DeleteGroupAlertDialog', () => ({
-  DeleteGroupAlertDialog: () => null,
-}));
-
 describe('GroupsSection', () => {
   beforeEach(() => {
     vi.clearAllMocks();

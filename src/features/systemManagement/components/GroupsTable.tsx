@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,14 +19,12 @@ interface GroupsTableProps {
   groups: PanelGroup[];
   isGeneralAdmin: boolean;
   onEdit: (group: PanelGroup) => void;
-  onDelete: (group: PanelGroup) => void;
 }
 
 export const GroupsTable = ({
   groups,
   isGeneralAdmin,
   onEdit,
-  onDelete,
 }: GroupsTableProps) => (
   <div className="overflow-hidden rounded-lg border">
     <Table>
@@ -68,17 +66,6 @@ export const GroupsTable = ({
                   title="Modificar grupo"
                 >
                   <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => onDelete(group)}
-                  aria-label={`Eliminar ${group.name}`}
-                  title="Eliminar grupo"
-                >
-                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </TableCell>

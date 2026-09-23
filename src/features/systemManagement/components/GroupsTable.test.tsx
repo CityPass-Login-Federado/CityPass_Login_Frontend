@@ -18,7 +18,6 @@ describe('GroupsTable', () => {
         groups={[group]}
         isGeneralAdmin={false}
         onEdit={vi.fn()}
-        onDelete={vi.fn()}
       />,
     );
 
@@ -42,8 +41,8 @@ describe('GroupsTable', () => {
       screen.getByRole('button', { name: 'Modificar soporte-n2' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Eliminar soporte-n2' }),
-    ).toBeInTheDocument();
+      screen.queryByRole('button', { name: 'Eliminar soporte-n2' }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('columnheader', { name: 'Módulo' }),
     ).not.toBeInTheDocument();
@@ -55,7 +54,6 @@ describe('GroupsTable', () => {
         groups={[{ ...group, reserved: true }]}
         isGeneralAdmin={false}
         onEdit={vi.fn()}
-        onDelete={vi.fn()}
       />,
     );
 
@@ -70,7 +68,6 @@ describe('GroupsTable', () => {
         groups={[group]}
         isGeneralAdmin
         onEdit={vi.fn()}
-        onDelete={vi.fn()}
       />,
     );
 

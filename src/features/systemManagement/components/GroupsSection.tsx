@@ -12,7 +12,6 @@ import {
 import { getPanelErrorMessage } from '../utils/errors';
 import { getReservedParam } from '../utils/groups';
 import { CreateGroupDialog } from './CreateGroupDialog';
-import { DeleteGroupAlertDialog } from './DeleteGroupAlertDialog';
 import { EditGroupDialog } from './EditGroupDialog';
 import { GroupFilters } from './GroupFilters';
 import { GroupsTable } from './GroupsTable';
@@ -37,7 +36,6 @@ export const GroupsSection = ({
   const [module, setModule] = useState('all');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<PanelGroup | null>(null);
-  const [groupToDelete, setGroupToDelete] = useState<PanelGroup | null>(null);
   const debouncedSearch = useDebouncedValue(search);
   const reserved = getReservedParam(reservation);
   const selectedModule =
@@ -97,7 +95,6 @@ export const GroupsSection = ({
                 groups={query.data.content}
                 isGeneralAdmin={isGeneralAdmin}
                 onEdit={setSelectedGroup}
-                onDelete={setGroupToDelete}
               />
               <TablePagination
                 currentPage={query.data.currentPage}
@@ -124,12 +121,6 @@ export const GroupsSection = ({
         open={selectedGroup !== null}
         group={selectedGroup}
         onOpenChange={(open) => !open && setSelectedGroup(null)}
-        onSuccess={(message) => onNotice('success', message)}
-        onError={(message) => onNotice('error', message)}
-      />
-      <DeleteGroupAlertDialog
-        group={groupToDelete}
-        onOpenChange={(open) => !open && setGroupToDelete(null)}
         onSuccess={(message) => onNotice('success', message)}
         onError={(message) => onNotice('error', message)}
       />
