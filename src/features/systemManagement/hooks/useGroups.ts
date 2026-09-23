@@ -7,6 +7,7 @@ import {
 
 import {
   addUserToGroup,
+  addUsersToGroups,
   createGroup,
   deleteGroup,
   fetchGroups,
@@ -14,6 +15,7 @@ import {
 } from '../api/panelApi';
 import {
   type AssignUserToGroupRequest,
+  type BulkMembershipRequest,
   type CreateGroupRequest,
   type DeleteGroupRequest,
   type GroupListParams,
@@ -59,6 +61,15 @@ export const useAssignUserToGroup = () => {
 
   return useMutation({
     mutationFn: (data: AssignUserToGroupRequest) => addUserToGroup(data),
+    onSettled: () => reconcilePeopleAndGroups(queryClient),
+  });
+};
+
+export const useAssignUsersToGroups = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: BulkMembershipRequest) => addUsersToGroups(data),
     onSettled: () => reconcilePeopleAndGroups(queryClient),
   });
 };

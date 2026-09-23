@@ -94,6 +94,41 @@ export interface AssignUserToGroupRequest {
   groupName: string;
 }
 
+export type BulkMembershipStatus = 'SUCCESS' | 'PARTIAL' | 'FAILED';
+
+export type MembershipOperationStatus =
+  | 'ASSIGNED'
+  | 'ALREADY_MEMBER'
+  | 'FAILED';
+
+export interface BulkMembershipRequest {
+  memberUids: string[];
+  groupNames: string[];
+}
+
+export interface MembershipOperationResult {
+  memberUid: string;
+  groupName: string;
+  status: MembershipOperationStatus;
+  message: string | null;
+}
+
+export interface MembershipWarning {
+  memberUid: string;
+  totalGroups: number;
+  message: string;
+}
+
+export interface BulkMembershipResponse {
+  status: BulkMembershipStatus;
+  requested: number;
+  assigned: number;
+  skipped: number;
+  failed: number;
+  results: MembershipOperationResult[];
+  warnings: MembershipWarning[];
+}
+
 export interface DeleteGroupRequest {
   groupName: string;
 }

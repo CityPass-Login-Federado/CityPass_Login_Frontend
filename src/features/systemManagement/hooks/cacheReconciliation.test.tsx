@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 
 import {
   addUserToGroup,
+  addUsersToGroups,
   createGroup,
   createPerson,
   deleteGroup,
@@ -18,6 +19,7 @@ import { type PanelGroup, type PanelPerson } from '../types';
 import { panelQueryKeys } from '../utils/queryKeys';
 import {
   useAssignUserToGroup,
+  useAssignUsersToGroups,
   useCreateGroup,
   useDeleteGroup,
   useGroups,
@@ -32,6 +34,7 @@ import {
 
 vi.mock('../api/panelApi', () => ({
   addUserToGroup: vi.fn(),
+  addUsersToGroups: vi.fn(),
   createGroup: vi.fn(),
   createPerson: vi.fn(),
   deleteGroup: vi.fn(),
@@ -189,6 +192,34 @@ describe('reconciliación de cachés del panel', () => {
     });
 
     expectPeopleAndGroupsInvalidated(queryClient);
+    queryClient.clear();
+  });
+
+  test('asignar membresías masivas reconcilia personas y grupos una sola vez al finalizar', async () => {
+    vi.mocked(addUsersToGroups).mockResolvedValueOnce({
+      status: 'SUCCESS',
+      requested: 2,
+      assigned: 2,
+      skipped: 0,
+      failed: 0,
+      results: [],
+      warnings: [],
+    });
+    const queryClient = createQueryClient();
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    const { result } = renderHook(() => useAssignUsersToGroups(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        memberUids: ['jperez'],
+        groupNames: ['soporte-n2', 'auditoria'],
+      });
+    });
+
+    expectPeopleAndGroupsInvalidated(queryClient);
+    expect(invalidateSpy).toHaveBeenCalledTimes(2);
     queryClient.clear();
   });
 

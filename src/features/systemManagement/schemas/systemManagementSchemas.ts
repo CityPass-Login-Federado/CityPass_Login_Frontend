@@ -38,8 +38,17 @@ export const groupFormSchema = z.object({
 export type GroupFormValues = z.infer<typeof groupFormSchema>;
 
 export const assignmentFormSchema = z.object({
-  userId: z.string().min(1, 'Seleccione un usuario'),
-  groupName: z.string().min(1, 'Seleccione un grupo'),
+  memberUids: z.array(z.string()).min(1, 'Seleccione al menos un usuario'),
+  groupNames: z.array(z.string()).min(1, 'Seleccione al menos un grupo'),
+}).superRefine(({ memberUids, groupNames }, context) => {
+  const assignments = memberUids.length * groupNames.length;
+  if (assignments > 1000) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['groupNames'],
+      message: 'La selección no puede superar las 1000 asignaciones',
+    });
+  }
 });
 
 export type AssignmentFormValues = z.infer<typeof assignmentFormSchema>;

@@ -26,7 +26,7 @@ export const SystemManagementPage = () => {
         onNotice={handleNotice}
       />
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(300px,0.8fr)]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(380px,1fr)]">
         <GroupsSection onNotice={handleNotice} />
         <AssignUserToGroupCard onNotice={handleNotice} />
       </div>
