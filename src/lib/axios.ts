@@ -10,8 +10,8 @@ export const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
   (config) => {
-    const isLoginRequest = config.url?.includes('/auth/login');
-    if (!isLoginRequest) {
+    const isPublicAuthRequest = config.url?.startsWith('/auth/');
+    if (!isPublicAuthRequest) {
       const accessToken = localStorage.getItem('access_token');
       if (accessToken) {
         config.headers.Authorization = `Bearer ${accessToken}`;

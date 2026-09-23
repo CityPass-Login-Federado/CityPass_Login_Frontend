@@ -41,6 +41,7 @@ const renderUserMenu = (queryClient: QueryClient) =>
       <MemoryRouter initialEntries={['/panel']}>
         <Routes>
           <Route path="/panel" element={<UserMenu />} />
+          <Route path="/reset-password" element={<p>Cambio de contraseña</p>} />
           <Route path="/login" element={<p>Pantalla de acceso</p>} />
         </Routes>
       </MemoryRouter>
@@ -59,7 +60,7 @@ describe('UserMenu', () => {
     useAuthStore.setState({ session: null, isHydrated: false });
   });
 
-  test('muestra únicamente la opción para cerrar sesión', async () => {
+  test('muestra las opciones de contraseña y cierre de sesión', async () => {
     const user = userEvent.setup();
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -71,9 +72,28 @@ describe('UserMenu', () => {
     );
 
     expect(screen.getByRole('menu', { name: 'Opciones de usuario' })).toBeVisible();
+    expect(
+      screen.getByRole('menuitem', { name: 'Restablecer contraseña' }),
+    ).toBeVisible();
     expect(screen.getByRole('menuitem', { name: 'Cerrar sesión' })).toBeVisible();
     expect(screen.getAllByText('Admin General')).toHaveLength(2);
-    expect(screen.queryByText(/restablecer contraseña/i)).not.toBeInTheDocument();
+  });
+
+  test('navega al cambio de contraseña desde el menú', async () => {
+    const user = userEvent.setup();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    renderUserMenu(queryClient);
+
+    await user.click(
+      screen.getByRole('button', { name: 'Abrir menú de usuario' }),
+    );
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Restablecer contraseña' }),
+    );
+
+    expect(await screen.findByText('Cambio de contraseña')).toBeInTheDocument();
   });
 
   test('revoca el token, limpia la sesión y redirige al login', async () => {

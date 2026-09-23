@@ -1,5 +1,12 @@
-import { ChevronDown, LoaderCircle, LogOut, UserRound } from 'lucide-react';
+import {
+  ChevronDown,
+  KeyRound,
+  LoaderCircle,
+  LogOut,
+  UserRound,
+} from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   selectIsGeneralAdmin,
@@ -8,11 +15,12 @@ import {
 import { useLogout } from '../hooks/useLogout';
 
 export const UserMenu = () => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const menuId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const logoutButtonRef = useRef<HTMLButtonElement>(null);
+  const firstMenuItemRef = useRef<HTMLButtonElement>(null);
   const session = useAuthStore((state) => state.session);
   const isGeneralAdmin = useAuthStore(selectIsGeneralAdmin);
   const logoutMutation = useLogout();
@@ -25,7 +33,7 @@ export const UserMenu = () => {
   useEffect(() => {
     if (!isOpen) return;
 
-    logoutButtonRef.current?.focus();
+    firstMenuItemRef.current?.focus();
 
     const handlePointerDown = (event: PointerEvent) => {
       if (!containerRef.current?.contains(event.target as Node)) {
@@ -105,7 +113,19 @@ export const UserMenu = () => {
           </div>
           <div className="border-t p-1.5">
             <button
-              ref={logoutButtonRef}
+              ref={firstMenuItemRef}
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setIsOpen(false);
+                navigate('/reset-password');
+              }}
+              className="flex w-full items-center gap-2 rounded-sm px-2.5 py-2 text-sm font-medium outline-none transition-colors hover:bg-accent focus:bg-accent"
+            >
+              <KeyRound className="h-4 w-4" aria-hidden="true" />
+              Restablecer contraseña
+            </button>
+            <button
               type="button"
               role="menuitem"
               onClick={() => {

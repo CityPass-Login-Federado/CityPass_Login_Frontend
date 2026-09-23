@@ -8,6 +8,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { axiosInstance } from '@/lib/axios';
 import * as loginApi from './api/login';
 import * as logoutApi from './api/logout';
+import * as passwordApi from './api/password';
 import { useLogin } from './hooks/useLogin';
 import { useAuthStore } from './store/useAuthStore';
 import { buildSessionFromToken, decodeJwtClaims, isGeneralAdminClaims } from './utils/jwt';
@@ -84,7 +85,7 @@ describe('auth runtime branches', () => {
     expect(localStorage.getItem('refresh_token')).toBeNull();
   });
 
-  test('axios agrega Authorization para llamadas autenticadas y mantiene login sin header', async () => {
+  test('axios agrega Authorization solo para llamadas autenticadas', async () => {
     const token = 'abc123';
     localStorage.setItem('access_token', token);
 
@@ -105,6 +106,19 @@ describe('auth runtime branches', () => {
     } as InternalAxiosRequestConfig);
 
     expect(loginConfig.headers.Authorization).toBeUndefined();
+
+    for (const url of [
+      '/auth/forgot-password',
+      '/auth/reset-password',
+      '/auth/refresh',
+      '/auth/logout',
+    ]) {
+      const publicConfig = await requestInterceptor!.fulfilled({
+        url,
+        headers: {},
+      } as InternalAxiosRequestConfig);
+      expect(publicConfig.headers.Authorization).toBeUndefined();
+    }
   });
 
   test('axios rechaza errores de request', async () => {
@@ -152,6 +166,34 @@ describe('auth runtime branches', () => {
     ).resolves.toBeUndefined();
     expect(postSpy).toHaveBeenCalledWith('/auth/logout', {
       refreshToken: 'refresh-1',
+    });
+  });
+
+  test('las APIs de contraseña respetan el contrato del backend', async () => {
+    const postSpy = vi.spyOn(axiosInstance, 'post').mockResolvedValue({
+      data: undefined,
+    } as Awaited<ReturnType<typeof axiosInstance.post>>);
+
+    await passwordApi.requestPasswordReset({ uid: 'jperez' });
+    await passwordApi.resetPassword({
+      token: 'reset-token',
+      newPassword: 'nueva123',
+    });
+    await passwordApi.changePassword({
+      currentPassword: 'actual123',
+      newPassword: 'nueva123',
+    });
+
+    expect(postSpy).toHaveBeenNthCalledWith(1, '/auth/forgot-password', {
+      uid: 'jperez',
+    });
+    expect(postSpy).toHaveBeenNthCalledWith(2, '/auth/reset-password', {
+      token: 'reset-token',
+      newPassword: 'nueva123',
+    });
+    expect(postSpy).toHaveBeenNthCalledWith(3, '/me/change-password', {
+      currentPassword: 'actual123',
+      newPassword: 'nueva123',
     });
   });
 

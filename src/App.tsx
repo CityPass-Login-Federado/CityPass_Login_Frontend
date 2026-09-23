@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { Toaster } from '@/components/ui/sonner';
 import { LoginPage } from '@/features/auth/components/LoginPage';
+import { ForgotPasswordPage } from '@/features/auth/components/ForgotPasswordPage';
+import { PasswordResetPage } from '@/features/auth/components/PasswordResetPage';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { UnauthorizedPage } from '@/features/auth/components/UnauthorizedPage';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
@@ -32,6 +34,8 @@ export const App = () => {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<PasswordResetPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           <Route element={<ProtectedRoute />}>
             <Route
