@@ -2,6 +2,8 @@ import { axiosInstance } from '@/lib/axios';
 
 import {
   type AssignUserToGroupRequest,
+  type BulkMembershipRequest,
+  type BulkMembershipResponse,
   type CreateGroupRequest,
   type CreatePersonRequest,
   type DeleteGroupRequest,
@@ -99,6 +101,17 @@ export const addUserToGroup = async ({
   const response = await axiosInstance.post<MembershipChangeResponse>(
     `/panel/groups/${encodeURIComponent(groupName)}/members`,
     { memberUid: userId },
+  );
+  return response.data;
+};
+
+export const addUsersToGroups = async ({
+  memberUids,
+  groupNames,
+}: BulkMembershipRequest): Promise<BulkMembershipResponse> => {
+  const response = await axiosInstance.post<BulkMembershipResponse>(
+    '/panel/group-memberships/bulk',
+    { memberUids, groupNames },
   );
   return response.data;
 };

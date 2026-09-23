@@ -14,7 +14,7 @@ export const GroupsManagementPage = () => {
       description="Gestiona todos los grupos desde un único lugar."
     >
       <GroupsSection onNotice={handleNotice} />
-      <div className="max-w-md">
+      <div className="max-w-2xl">
         <AssignUserToGroupCard onNotice={handleNotice} />
       </div>
     </ManagementPageLayout>

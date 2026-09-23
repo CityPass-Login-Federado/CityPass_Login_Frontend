@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { AssignUserToGroupCard } from './AssignUserToGroupCard';
@@ -6,42 +7,183 @@ import { AssignUserToGroupCard } from './AssignUserToGroupCard';
 const mocks = vi.hoisted(() => ({
   usePeople: vi.fn(),
   useGroups: vi.fn(),
-  useAssignUserToGroup: vi.fn(),
+  useAssignUsersToGroups: vi.fn(),
+  mutate: vi.fn(),
 }));
 
 vi.mock('../hooks/usePeople', () => ({ usePeople: mocks.usePeople }));
 vi.mock('../hooks/useGroups', () => ({
   useGroups: mocks.useGroups,
-  useAssignUserToGroup: mocks.useAssignUserToGroup,
+  useAssignUsersToGroups: mocks.useAssignUsersToGroups,
 }));
+
+const peopleData = {
+  content: [
+    {
+      employeeNumber: 'U1',
+      uid: 'ana',
+      givenName: 'Ana',
+      sn: 'López',
+      email: 'ana@citypass.local',
+      disabled: false,
+    },
+    {
+      employeeNumber: 'U2',
+      uid: 'luis',
+      givenName: 'Luis',
+      sn: 'Pérez',
+      email: 'luis@citypass.local',
+      disabled: false,
+    },
+  ],
+  totalElements: 2,
+  totalPages: 1,
+  currentPage: 0,
+  size: 1000,
+};
+
+const groupsData = {
+  content: [
+    { name: 'soporte', members: [], reserved: false },
+    { name: 'auditoria', members: ['ana'], reserved: false },
+  ],
+  totalElements: 2,
+  totalPages: 1,
+  currentPage: 0,
+  size: 1000,
+};
+
+const readyQuery = (data: unknown) => ({
+  data,
+  isError: false,
+  isPending: false,
+  isPlaceholderData: false,
+});
 
 describe('AssignUserToGroupCard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const queryResult = { data: undefined, isError: false, isPending: false };
-    mocks.usePeople.mockReturnValue(queryResult);
-    mocks.useGroups.mockReturnValue(queryResult);
-    mocks.useAssignUserToGroup.mockReturnValue({
+    mocks.usePeople.mockReturnValue(readyQuery(peopleData));
+    mocks.useGroups.mockReturnValue(readyQuery(groupsData));
+    mocks.useAssignUsersToGroups.mockReturnValue({
       isPending: false,
-      mutate: vi.fn(),
+      mutate: mocks.mutate,
     });
   });
 
-  test('consulta las opciones sin depender del alcance administrativo', () => {
+  test('consulta las opciones del alcance del token', () => {
     render(<AssignUserToGroupCard onNotice={vi.fn()} />);
 
-    expect(mocks.usePeople).toHaveBeenCalledWith(
-      { page: 0, size: 1000 },
-    );
-    expect(mocks.useGroups).toHaveBeenCalledWith(
-      { page: 0, size: 1000 },
-    );
+    expect(mocks.usePeople).toHaveBeenCalledWith({ page: 0, size: 1000 });
+    expect(mocks.useGroups).toHaveBeenCalledWith({ page: 0, size: 1000 });
     expect(
-      screen.getByRole('button', { name: 'Asignar a Grupo' }),
+      screen.getByRole('button', { name: 'Asignar usuarios a grupos' }),
     ).toBeDisabled();
     expect(
       screen.queryByRole('combobox', { name: 'Seleccionar módulo' }),
     ).not.toBeInTheDocument();
+  });
+
+  test('envía múltiples usuarios y grupos y limpia la selección al completar', async () => {
+    const user = userEvent.setup();
+    const onNotice = vi.fn();
+    mocks.mutate.mockImplementation((_request, options) => {
+      options.onSuccess({
+        status: 'SUCCESS',
+        requested: 4,
+        assigned: 3,
+        skipped: 1,
+        failed: 0,
+        results: [],
+        warnings: [],
+      });
+    });
+
+    render(<AssignUserToGroupCard onNotice={onNotice} />);
+
+    await user.click(screen.getByRole('checkbox', { name: /Ana López/ }));
+    await user.click(screen.getByRole('checkbox', { name: /Luis Pérez/ }));
+    await user.click(screen.getByRole('checkbox', { name: /soporte/i }));
+    await user.click(screen.getByRole('checkbox', { name: /auditoria/i }));
+    await user.click(
+      screen.getByRole('button', { name: 'Realizar 4 asignaciones' }),
+    );
+
+    expect(mocks.mutate).toHaveBeenCalledWith(
+      {
+        memberUids: ['ana', 'luis'],
+        groupNames: ['soporte', 'auditoria'],
+      },
+      expect.objectContaining({
+        onSuccess: expect.any(Function),
+        onError: expect.any(Function),
+      }),
+    );
+    expect(onNotice).toHaveBeenCalledWith(
+      'success',
+      '3 asignadas, 1 ya existentes y 0 fallidas.',
+    );
+    expect(
+      screen.getByText('3 asignadas, 1 ya existentes y 0 fallidas.'),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole('checkbox', { name: /Ana López/ }),
+      ).not.toBeChecked(),
+    );
+  });
+
+  test('conserva la selección y muestra el detalle ante un resultado parcial', async () => {
+    const user = userEvent.setup();
+    const onNotice = vi.fn();
+    mocks.mutate.mockImplementation((_request, options) => {
+      options.onSuccess({
+        status: 'PARTIAL',
+        requested: 2,
+        assigned: 1,
+        skipped: 0,
+        failed: 1,
+        results: [
+          {
+            memberUid: 'ana',
+            groupName: 'auditoria',
+            status: 'FAILED',
+            message: 'No se pudo actualizar el grupo',
+          },
+        ],
+        warnings: [
+          {
+            memberUid: 'ana',
+            totalGroups: 30,
+            message: 'La persona acumula 30 grupos',
+          },
+        ],
+      });
+    });
+
+    render(<AssignUserToGroupCard onNotice={onNotice} />);
+
+    await user.click(screen.getByRole('checkbox', { name: /Ana López/ }));
+    await user.click(screen.getByRole('checkbox', { name: /soporte/i }));
+    await user.click(screen.getByRole('checkbox', { name: /auditoria/i }));
+    await user.click(
+      screen.getByRole('button', { name: 'Realizar 2 asignaciones' }),
+    );
+
+    expect(
+      screen.getByRole('checkbox', { name: /Ana López/ }),
+    ).toBeChecked();
+    expect(
+      screen.getByText(/ana → auditoria: No se pudo actualizar el grupo/),
+    ).toBeInTheDocument();
+    expect(onNotice).toHaveBeenCalledWith(
+      'warning',
+      '1 asignadas, 0 ya existentes y 1 fallidas.',
+    );
+    expect(onNotice).toHaveBeenCalledWith(
+      'warning',
+      'ana: La persona acumula 30 grupos',
+    );
   });
 
   test('mantiene deshabilitadas las opciones mientras muestra datos placeholder', () => {
@@ -56,11 +198,7 @@ describe('AssignUserToGroupCard', () => {
 
     render(<AssignUserToGroupCard onNotice={vi.fn()} />);
 
-    expect(
-      screen.getByRole('combobox', { name: 'Seleccionar usuario' }),
-    ).toBeDisabled();
-    expect(
-      screen.getByRole('combobox', { name: 'Seleccionar grupo' }),
-    ).toBeDisabled();
+    expect(screen.getByLabelText('Buscar usuarios…')).toBeDisabled();
+    expect(screen.getByLabelText('Buscar grupos…')).toBeDisabled();
   });
 });

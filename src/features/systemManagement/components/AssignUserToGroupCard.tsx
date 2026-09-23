@@ -1,31 +1,29 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
-import { useAssignUserToGroup, useGroups } from '../hooks/useGroups';
+import { useAssignUsersToGroups, useGroups } from '../hooks/useGroups';
 import { usePeople } from '../hooks/usePeople';
 import {
   assignmentFormSchema,
   type AssignmentFormValues,
 } from '../schemas/systemManagementSchemas';
 import {
-  type GroupSelectOption,
+  type BulkMembershipResponse,
   type NoticeHandler,
-  type UserSelectOption,
 } from '../types';
 import { getPanelErrorMessage } from '../utils/errors';
 import { getGroupDisplayName } from '../utils/groups';
+import {
+  CheckboxMultiSelect,
+  type CheckboxMultiSelectOption,
+} from './CheckboxMultiSelect';
+
+const MAX_BULK_MEMBERSHIPS = 1000;
 
 interface AssignUserToGroupCardProps {
   onNotice: NoticeHandler;
@@ -34,6 +32,8 @@ interface AssignUserToGroupCardProps {
 export const AssignUserToGroupCard = ({
   onNotice,
 }: AssignUserToGroupCardProps) => {
+  const [lastResponse, setLastResponse] =
+    useState<BulkMembershipResponse | null>(null);
   const {
     control,
     handleSubmit,
@@ -42,131 +42,140 @@ export const AssignUserToGroupCard = ({
     formState: { errors },
   } = useForm<AssignmentFormValues>({
     resolver: zodResolver(assignmentFormSchema),
-    defaultValues: { userId: '', groupName: '' },
+    defaultValues: { memberUids: [], groupNames: [] },
   });
-  const userId = watch('userId');
-  const groupName = watch('groupName');
-  const peopleQuery = usePeople({ page: 0, size: 1000 });
-  const groupsQuery = useGroups({ page: 0, size: 1000 });
-  const mutation = useAssignUserToGroup();
+  const memberUids = watch('memberUids');
+  const groupNames = watch('groupNames');
+  const peopleQuery = usePeople(
+    { page: 0, size: 1000 },
+  );
+  const groupsQuery = useGroups(
+    { page: 0, size: 1000 },
+  );
+  const mutation = useAssignUsersToGroups();
 
-  const userOptions = useMemo<UserSelectOption[]>(
+  const userOptions = useMemo<CheckboxMultiSelectOption[]>(
     () =>
       (peopleQuery.data?.content ?? []).map((person) => ({
         value: person.uid,
-        label: `${person.givenName} ${person.sn} (${person.uid})`,
-        email: person.email,
+        label: `${person.givenName} ${person.sn}`,
+        description: `${person.uid} · ${person.email}`,
       })),
     [peopleQuery.data?.content],
   );
-  const groupOptions = useMemo<GroupSelectOption[]>(
+  const groupOptions = useMemo<CheckboxMultiSelectOption[]>(
     () =>
       (groupsQuery.data?.content ?? []).map((group) => ({
         value: group.name,
         label: getGroupDisplayName(group),
+        description: `${group.members.length} ${
+          group.members.length === 1 ? 'miembro' : 'miembros'
+        }`,
       })),
     [groupsQuery.data?.content],
   );
 
-  const handleFormSubmit = (values: AssignmentFormValues) => {
-    mutation.mutate(
-      {
-        userId: values.userId,
-        groupName: values.groupName,
-      },
-      {
-        onSuccess: (response) => {
-          onNotice('success', 'Usuario asignado correctamente.');
-          if (response.warnings.length) {
-            onNotice('warning', response.warnings.join(' '));
-          }
-          reset({ userId: '', groupName: '' });
-        },
-        onError: (error) =>
-          onNotice(
-            'error',
-            getPanelErrorMessage(error, 'No se pudo asignar el usuario.'),
-          ),
-      },
-    );
-  };
-
+  const assignmentCount = memberUids.length * groupNames.length;
+  const exceedsBulkLimit = assignmentCount > MAX_BULK_MEMBERSHIPS;
   const isLoading =
     peopleQuery.isPending ||
     peopleQuery.isPlaceholderData ||
     groupsQuery.isPending ||
     groupsQuery.isPlaceholderData;
   const hasLoadError = peopleQuery.isError || groupsQuery.isError;
+  const selectionDisabled =
+    isLoading || hasLoadError || mutation.isPending;
+
+  const handleFormSubmit = (values: AssignmentFormValues) => {
+    setLastResponse(null);
+    mutation.mutate(
+      {
+        memberUids: values.memberUids,
+        groupNames: values.groupNames,
+      },
+      {
+        onSuccess: (response) => {
+          setLastResponse(response);
+          const summary = buildResponseSummary(response);
+          const kind =
+            response.status === 'SUCCESS'
+              ? 'success'
+              : response.status === 'PARTIAL'
+                ? 'warning'
+                : 'error';
+          onNotice(kind, summary);
+
+          if (response.warnings.length) {
+            onNotice(
+              'warning',
+              response.warnings
+                .map((warning) => `${warning.memberUid}: ${warning.message}`)
+                .join(' '),
+            );
+          }
+
+          if (response.status === 'SUCCESS') {
+            reset({ memberUids: [], groupNames: [] });
+          }
+        },
+        onError: (error) =>
+          onNotice(
+            'error',
+            getPanelErrorMessage(
+              error,
+              'No se pudieron asignar los usuarios a los grupos.',
+            ),
+          ),
+      },
+    );
+  };
 
   return (
     <section id="assignment" aria-labelledby="assignment-title">
       <Card className="h-full">
         <CardHeader className="p-4 pb-3 sm:p-5 sm:pb-3">
           <CardTitle id="assignment-title" className="text-base">
-            Asignar Usuario a Grupo
+            Asignar usuarios a grupos
           </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Cada usuario seleccionado se agregará a todos los grupos elegidos.
+          </p>
         </CardHeader>
         <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
           <form className="space-y-4" onSubmit={handleSubmit(handleFormSubmit)}>
-            <SelectField
-              label="Seleccionar usuario"
-              error={errors.userId?.message}
-            >
-              <Controller
-                name="userId"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    disabled={isLoading || hasLoadError || mutation.isPending}
-                  >
-                    <SelectTrigger aria-label="Seleccionar usuario">
-                      <SelectValue
-                        placeholder={isLoading ? 'Cargando…' : 'Buscar usuario…'}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {userOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </SelectField>
+            <Controller
+              name="memberUids"
+              control={control}
+              render={({ field }) => (
+                <CheckboxMultiSelect
+                  label="Usuarios"
+                  options={userOptions}
+                  selectedValues={field.value}
+                  onChange={field.onChange}
+                  searchPlaceholder="Buscar usuarios…"
+                  emptyMessage="No hay usuarios para mostrar."
+                  disabled={selectionDisabled}
+                  error={errors.memberUids?.message}
+                />
+              )}
+            />
 
-            <SelectField
-              label="Seleccionar grupo"
-              error={errors.groupName?.message}
-            >
-              <Controller
-                name="groupName"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    disabled={isLoading || hasLoadError || mutation.isPending}
-                  >
-                    <SelectTrigger aria-label="Seleccionar grupo">
-                      <SelectValue
-                        placeholder={isLoading ? 'Cargando…' : 'Elegir un grupo…'}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {groupOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </SelectField>
+            <Controller
+              name="groupNames"
+              control={control}
+              render={({ field }) => (
+                <CheckboxMultiSelect
+                  label="Grupos"
+                  options={groupOptions}
+                  selectedValues={field.value}
+                  onChange={field.onChange}
+                  searchPlaceholder="Buscar grupos…"
+                  emptyMessage="No hay grupos para mostrar."
+                  disabled={selectionDisabled}
+                  error={errors.groupNames?.message}
+                />
+              )}
+            />
 
             {hasLoadError && (
               <p role="alert" className="text-xs text-destructive">
@@ -174,19 +183,48 @@ export const AssignUserToGroupCard = ({
               </p>
             )}
 
+            <div
+              className={cn(
+                'rounded-md border px-3 py-2 text-sm',
+                exceedsBulkLimit
+                  ? 'border-destructive/50 bg-destructive/5 text-destructive'
+                  : 'bg-muted/40 text-muted-foreground',
+              )}
+              role={exceedsBulkLimit ? 'alert' : 'status'}
+            >
+              {memberUids.length}{' '}
+              {memberUids.length === 1 ? 'usuario' : 'usuarios'} ×{' '}
+              {groupNames.length}{' '}
+              {groupNames.length === 1 ? 'grupo' : 'grupos'} ={' '}
+              <strong>{assignmentCount} asignaciones</strong>
+              {exceedsBulkLimit && (
+                <span className="block text-xs">
+                  El máximo permitido por operación es {MAX_BULK_MEMBERSHIPS}.
+                </span>
+              )}
+            </div>
+
             <Button
               type="submit"
               className="w-full"
               disabled={
-                !userId ||
-                !groupName ||
+                assignmentCount === 0 ||
+                exceedsBulkLimit ||
                 isLoading ||
                 hasLoadError ||
                 mutation.isPending
               }
             >
-              {mutation.isPending ? 'Asignando…' : 'Asignar a Grupo'}
+              {mutation.isPending
+                ? 'Asignando…'
+                : assignmentCount > 0
+                  ? `Realizar ${assignmentCount} ${
+                      assignmentCount === 1 ? 'asignación' : 'asignaciones'
+                    }`
+                  : 'Asignar usuarios a grupos'}
             </Button>
+
+            {lastResponse && <BulkAssignmentResult response={lastResponse} />}
           </form>
         </CardContent>
       </Card>
@@ -194,22 +232,52 @@ export const AssignUserToGroupCard = ({
   );
 };
 
-const SelectField = ({
-  label,
-  error,
-  children,
+const buildResponseSummary = (response: BulkMembershipResponse) =>
+  `${response.assigned} asignadas, ${response.skipped} ya existentes y ${response.failed} fallidas.`;
+
+const BulkAssignmentResult = ({
+  response,
 }: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
-}) => (
-  <div className="space-y-2">
-    <Label>{label}</Label>
-    {children}
-    {error && (
-      <p role="alert" className="text-xs text-destructive">
-        {error}
-      </p>
-    )}
-  </div>
-);
+  response: BulkMembershipResponse;
+}) => {
+  const failures = response.results.filter(
+    (result) => result.status === 'FAILED',
+  );
+  const isSuccess = response.status === 'SUCCESS';
+
+  return (
+    <div
+      role={isSuccess ? 'status' : 'alert'}
+      className={cn(
+        'space-y-2 rounded-md border px-3 py-2 text-sm',
+        response.status === 'FAILED'
+          ? 'border-destructive/50 bg-destructive/5'
+          : response.status === 'PARTIAL'
+            ? 'border-amber-300 bg-amber-50 text-amber-950'
+            : 'border-emerald-300 bg-emerald-50 text-emerald-950',
+      )}
+    >
+      <p className="font-medium">{buildResponseSummary(response)}</p>
+
+      {failures.length > 0 && (
+        <ul className="max-h-32 list-disc space-y-1 overflow-y-auto pl-5 text-xs">
+          {failures.map((failure) => (
+            <li key={`${failure.memberUid}-${failure.groupName}`}>
+              {failure.memberUid} → {failure.groupName}: {failure.message}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {response.warnings.length > 0 && (
+        <ul className="space-y-1 text-xs">
+          {response.warnings.map((warning) => (
+            <li key={warning.memberUid}>
+              {warning.memberUid}: {warning.message}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};

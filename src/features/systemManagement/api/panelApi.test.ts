@@ -3,6 +3,7 @@ import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { axiosInstance } from '@/lib/axios';
 import {
   addUserToGroup,
+  addUsersToGroups,
   createGroup,
   createPerson,
   deleteGroup,
@@ -118,5 +119,34 @@ describe('panelApi', () => {
     expect(added.group.name).toBe('soporte-n2');
     expect(added.warnings).toEqual([]);
     expect(removed.group.members).toEqual([]);
+  });
+
+  test('addUsersToGroups envía el lote al endpoint masivo', async () => {
+    const response = {
+      status: 'SUCCESS' as const,
+      requested: 4,
+      assigned: 3,
+      skipped: 1,
+      failed: 0,
+      results: [],
+      warnings: [],
+    };
+    const postSpy = vi
+      .spyOn(axiosInstance, 'post')
+      .mockResolvedValue({ data: response });
+
+    const result = await addUsersToGroups({
+      memberUids: ['u1', 'u2'],
+      groupNames: ['soporte', 'auditoria'],
+    });
+
+    expect(postSpy).toHaveBeenCalledWith(
+      '/panel/group-memberships/bulk',
+      {
+        memberUids: ['u1', 'u2'],
+        groupNames: ['soporte', 'auditoria'],
+      },
+    );
+    expect(result).toEqual(response);
   });
 });

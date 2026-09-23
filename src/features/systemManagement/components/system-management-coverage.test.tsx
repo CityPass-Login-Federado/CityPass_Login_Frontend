@@ -25,6 +25,10 @@ vi.mock('../hooks/useGroups', () => ({
     isPending: false,
     mutate: vi.fn(),
   }),
+  useAssignUsersToGroups: () => ({
+    isPending: false,
+    mutate: vi.fn(),
+  }),
   useDeleteGroup: () => ({
     isPending: false,
     mutate: vi.fn(),
