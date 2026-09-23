@@ -15,6 +15,20 @@ export interface RefreshRequest {
   refreshToken: string;
 }
 
+export interface ForgotPasswordRequest {
+  uid: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface LoginFormValues {
   username: string;
   password: string;
