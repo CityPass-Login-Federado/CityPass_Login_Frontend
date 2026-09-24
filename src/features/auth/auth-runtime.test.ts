@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { createElement, useEffect } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { authAxiosInstance, axiosInstance } from '@/lib/axios';
@@ -330,7 +330,7 @@ describe('auth runtime branches', () => {
     });
   });
 
-  test('useLogin guarda la sesión y redirige al panel tras éxito', async () => {
+  test('useLogin guarda la sesión y redirige al panel para un administrador', async () => {
     const token = createToken({
       sub: 'U777',
       exp: Math.floor(Date.now() / 1000) + 900,
@@ -363,8 +363,13 @@ describe('auth runtime branches', () => {
         { client: queryClient },
         createElement(
           MemoryRouter,
-          null,
-          createElement(TestComponent),
+          { initialEntries: ['/login'] },
+          createElement(
+            Routes,
+            null,
+            createElement(Route, { path: '/login', element: createElement(TestComponent) }),
+            createElement(Route, { path: '/panel', element: createElement('p', null, 'Panel') }),
+          ),
         ),
       ),
     );
@@ -375,7 +380,56 @@ describe('auth runtime branches', () => {
       expect(localStorage.getItem('access_token')).toBeNull();
       expect(localStorage.getItem('refresh_token')).toBeNull();
       expect(useAuthStore.getState().session?.userId).toBe('U777');
+      expect(screen.getByText('Panel')).toBeInTheDocument();
     });
+  });
+
+  test('useLogin redirige al inicio exitoso para un usuario común', async () => {
+    const token = createToken({
+      sub: 'U888',
+      exp: Math.floor(Date.now() / 1000) + 900,
+      preferred_username: 'maria',
+      groups: [],
+      module: 'reclamos',
+    });
+
+    vi.spyOn(loginApi, 'loginUser').mockResolvedValue({
+      access_token: token,
+      refresh_token: 'refresh-user',
+      token_type: 'Bearer',
+      expires_in: 3600,
+    });
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const TestComponent = () => {
+      const mutation = useLogin();
+
+      useEffect(() => {
+        mutation.mutate({ username: 'maria', password: 'secret', clientId: 'client-1' });
+      }, [mutation]);
+
+      return null;
+    };
+
+    render(
+      createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        createElement(
+          MemoryRouter,
+          { initialEntries: ['/login'] },
+          createElement(
+            Routes,
+            null,
+            createElement(Route, { path: '/login', element: createElement(TestComponent) }),
+            createElement(Route, { path: '/home', element: createElement('p', null, 'User home') }),
+          ),
+        ),
+      ),
+    );
+
+    expect(await screen.findByText('User home')).toBeInTheDocument();
+    expect(useAuthStore.getState().session?.userId).toBe('U888');
   });
 
   test('isGeneralAdminClaims acepta admin_scope, grupos y roles sin normalizar', () => {

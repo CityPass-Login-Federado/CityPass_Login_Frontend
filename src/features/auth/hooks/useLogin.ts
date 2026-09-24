@@ -3,6 +3,7 @@ import { type AxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../api/login';
 import { establishSession } from '../session/sessionManager';
+import { selectCanAccessPanel, useAuthStore } from '../store/useAuthStore';
 import { type ApiError, type LoginRequest, type LoginResponse } from '../types';
 
 export const useLogin = () => {
@@ -15,7 +16,11 @@ export const useLogin = () => {
       return response;
     },
     onSuccess: () => {
-      navigate('/panel', { replace: true });
+      const destination = selectCanAccessPanel(useAuthStore.getState())
+        ? '/panel'
+        : '/home';
+
+      navigate(destination, { replace: true });
     },
   });
 };
