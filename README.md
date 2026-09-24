@@ -156,16 +156,24 @@ src/
 ├── features/
 │   ├── auth/
 │   │   ├── api/                  # Login, logout y contraseñas
-│   │   ├── components/           # Pantallas y protección de rutas
+│   │   ├── forms/                # Formularios de acceso y contraseñas
 │   │   ├── hooks/                # Mutaciones de autenticación
+│   │   ├── layout/               # Layout público y menú de sesión
+│   │   ├── pages/                # Pantallas asociadas a rutas
+│   │   ├── routing/              # Guards de rutas públicas y protegidas
 │   │   ├── session/              # Custodia de tokens en memoria
 │   │   ├── store/                # Sesión compartida con Zustand
 │   │   ├── types/
 │   │   └── utils/                # JWT, validaciones y errores
 │   └── systemManagement/
 │       ├── api/                  # Endpoints del panel
-│       ├── components/           # Páginas, tablas, filtros y diálogos
+│       ├── components/
+│       │   ├── groups/           # Gestión y asignación de grupos
+│       │   ├── layout/           # Estructura y navegación del panel
+│       │   ├── shared/           # Paginación y estados reutilizables
+│       │   └── users/            # Gestión de usuarios
 │       ├── hooks/                # Queries y mutaciones
+│       ├── pages/                # Pantallas asociadas a rutas del panel
 │       ├── schemas/              # Validaciones Zod
 │       ├── types/
 │       └── utils/                # Caché, filtros, módulos y paginación

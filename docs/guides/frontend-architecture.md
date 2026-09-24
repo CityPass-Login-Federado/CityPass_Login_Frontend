@@ -14,7 +14,17 @@ src/
 │   └── AppErrorBoundary.tsx   # Límite global de errores del panel
 ├── features/
 │   ├── auth/                  # Autenticación, sesión y contraseñas
+│   │   ├── forms/             # Formularios de acceso y contraseñas
+│   │   ├── layout/            # Layout público y menú de sesión
+│   │   ├── pages/             # Pantallas asociadas a rutas
+│   │   └── routing/           # Guards de navegación
 │   └── systemManagement/      # Administración de usuarios y grupos
+│       ├── components/
+│       │   ├── groups/        # Componentes propios de grupos
+│       │   ├── layout/        # Layout y navegación del panel
+│       │   ├── shared/        # Componentes comunes del dominio
+│       │   └── users/         # Componentes propios de usuarios
+│       └── pages/             # Pantallas asociadas a rutas del panel
 ├── lib/
 │   ├── axios.ts               # Cliente HTTP e interceptores de autenticación
 │   ├── queryClient.ts         # Configuración compartida de TanStack Query
@@ -244,7 +254,7 @@ El uso de primitivas de Radix aporta comportamientos accesibles de base, pero ca
 | Si necesitás... | Empezá por... | Revisá también... |
 |---|---|---|
 | Agregar o cambiar una ruta | `src/App.tsx` | `ProtectedRoute.tsx` si requiere sesión |
-| Modificar el login | `auth/components/LoginForm.tsx` | `useLogin.ts`, `api/login.ts` y el esquema de login |
+| Modificar el login | `auth/forms/LoginForm.tsx` | `useLogin.ts`, `api/login.ts` y el esquema de login |
 | Cambiar cómo se guardan los tokens | `auth/session/tokenVault.ts` | `sessionManager.ts`, `useAuthStore.ts` y `lib/axios.ts` |
 | Cambiar permisos del panel | `auth/store/useAuthStore.ts` | `auth/utils/jwt.ts` y `ProtectedRoute.tsx` |
 | Agregar un endpoint de autenticación | `auth/api/` | su hook, tipos y pruebas |

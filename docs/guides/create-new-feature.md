@@ -4,11 +4,10 @@ Esta guía detalla el flujo de trabajo estándar para agregar nuevas pantallas e
 
 ## Paso 1: Identificar el Dominio (Feature)
 Antes de crear un componente visual, debemos determinar a qué módulo de negocio pertenece la pantalla. 
-* Si es el **Login**, pertenece a la feature `auth`.
-* Si es el **Alta de usuarios Admin**, pertenece a la feature `users` (o `admin`).
-* Si es el **Alta de grupos**, pertenece a la feature `roles` (o `groups`).
+* Si corresponde al **login, sesión o contraseñas**, pertenece a `auth`.
+* Si corresponde a la **administración de usuarios o grupos**, pertenece a `systemManagement` y a su subdominio `users` o `groups`.
 
-Si el dominio no existe, crea una nueva carpeta dentro de `src/features/`.
+Solo se crea una nueva carpeta dentro de `src/features/` cuando aparece un dominio de negocio distinto. Una pantalla nueva de usuarios o grupos no crea una feature adicional.
 
 ## Paso 2: Crear la estructura interna
 Toda feature nueva debe respetar la siguiente estructura de carpetas interna:
@@ -16,12 +15,15 @@ Toda feature nueva debe respetar la siguiente estructura de carpetas interna:
 ```text
 src/features/nombre-feature/
 ├── api/          # Funciones que usan Axios para llamar al backend
-├── components/   # Componentes visuales exclusivos de esta feature
+├── components/   # Componentes propios, agrupados por subdominio si hace falta
 ├── hooks/        # Custom hooks (ej. mutaciones de React Query)
-├── store/        # Estado global local de la feature (Zustand) - Opcional
+├── pages/        # Componentes asociados a rutas
+├── store/        # Estado global local de la feature (opcional)
 ├── types/        # Interfaces y DTOs (Request/Response)
 └── utils/        # Funciones auxiliares puras
 ```
+
+No todas las features deben tener todas las carpetas. Se agregan solamente cuando representan una responsabilidad real; por ejemplo, `systemManagement/components/` se divide en `users`, `groups`, `shared` y `layout`.
 
 ## Paso 3: Definir los Contratos (Types)
 Para cumplir con los 10 puntos de "Integración y APIs", nos basamos estrictamente en el contrato OpenAPI/Swagger del backend. 
@@ -29,7 +31,7 @@ Ve a `src/features/nombre-feature/types/index.ts` y define las interfaces.
 
 **Ejemplo para "Alta de usuarios Admin":**
 ```typescript
-// src/features/users/types/index.ts
+// src/features/systemManagement/types/index.ts
 export interface CreateAdminRequest {
   username: string;
   email: string;
@@ -49,7 +51,7 @@ Separamos la llamada HTTP de la lógica de React para abstraer el manejo asincr�
 
 **1. Crear la llamada Axios (`api/`)**
 ```typescript
-// src/features/users/api/createUser.ts
+// src/features/systemManagement/api/createUser.ts
 import { axiosInstance } from '@/lib/axios';
 import { CreateAdminRequest, UserResponse } from '../types';
 
@@ -61,7 +63,7 @@ export const createAdminUser = async (data: CreateAdminRequest): Promise<UserRes
 
 **2. Crear el Hook con React Query (`hooks/`)**
 ```typescript
-// src/features/users/hooks/useCreateUser.ts
+// src/features/systemManagement/hooks/useCreateUser.ts
 import { useMutation } from '@tanstack/react-query';
 import { createAdminUser } from '../api/createUser';
 
@@ -79,8 +81,8 @@ export const useCreateUser = () => {
 Diseñamos la pantalla usando **Tailwind CSS** y componentes de **Shadcn UI** ubicados en `src/components/ui/` para asegurar los 10 puntos correspondientes a la dimensión de "UX/UI del Módulo".
 
 ```tsx
-// src/features/users/components/CreateAdminForm.tsx
-import { useCreateUser } from '../hooks/useCreateUser';
+// src/features/systemManagement/components/users/CreateAdminForm.tsx
+import { useCreateUser } from '../../hooks/useCreateUser';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -106,15 +108,15 @@ export const CreateAdminForm = () => {
 ```
 
 ## Paso 6: Registrar la Ruta
-Para que la pantalla sea accesible, agrégala al enrutador principal en `src/routes/AppRouter.tsx`.
+Para que la pantalla sea accesible, agrégala al mapa de rutas en `src/App.tsx`.
 
-* Si es una pantalla protegida (como el Alta de Grupos o Usuarios), asegúrate de envolverla en un componente de protección de rutas (`<ProtectedRoute roles="{['ROLE_ADMIN']}"/>`) que valide el JWT antes de renderizarla. Esto es fundamental para cumplir con la consideración final del proyecto que indica que el login centralizado debe proteger todos los endpoints. 
+* Si es una pantalla administrativa, debe quedar dentro de `ProtectedRoute`. La autorización definitiva de cada operación continúa siendo responsabilidad del backend.
 
 ## Paso 7: Escribir los Tests (Crucial)
 La rúbrica exige un 60% de cobertura de pruebas automatizadas (unitarias e integrales). Por cada componente visual o hook complejo, crea un archivo `.test.tsx` junto al archivo original.
 
 ```tsx
-// src/features/users/components/CreateAdminForm.test.tsx
+// src/features/systemManagement/components/users/CreateAdminForm.test.tsx
 import { render, screen } from '@testing-library/react';
 import { CreateAdminForm } from './CreateAdminForm';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';

@@ -3,17 +3,17 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { Toaster } from '@/components/ui/sonner';
-import { LoginPage } from '@/features/auth/components/LoginPage';
-import { ForgotPasswordPage } from '@/features/auth/components/ForgotPasswordPage';
-import { PasswordResetPage } from '@/features/auth/components/PasswordResetPage';
-import { AuthenticatedRoute } from '@/features/auth/components/AuthenticatedRoute';
-import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
-import { UnauthorizedPage } from '@/features/auth/components/UnauthorizedPage';
-import { UserHomePage } from '@/features/auth/components/UserHomePage';
+import { LoginPage } from '@/features/auth/pages/LoginPage';
+import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage';
+import { PasswordResetPage } from '@/features/auth/pages/PasswordResetPage';
+import { AuthenticatedRoute } from '@/features/auth/routing/AuthenticatedRoute';
+import { ProtectedRoute } from '@/features/auth/routing/ProtectedRoute';
+import { UnauthorizedPage } from '@/features/auth/pages/UnauthorizedPage';
+import { UserHomePage } from '@/features/auth/pages/UserHomePage';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
-import { SystemManagementPage } from '@/features/systemManagement/components/SystemManagementPage';
-import { GroupsManagementPage } from '@/features/systemManagement/components/GroupsManagementPage';
-import { UsersManagementPage } from '@/features/systemManagement/components/UsersManagementPage';
+import { SystemManagementPage } from '@/features/systemManagement/pages/SystemManagementPage';
+import { GroupsManagementPage } from '@/features/systemManagement/pages/GroupsManagementPage';
+import { UsersManagementPage } from '@/features/systemManagement/pages/UsersManagementPage';
 import { queryClient } from '@/lib/queryClient';
 
 export const App = () => {

@@ -7,7 +7,7 @@ vi.mock('@/components/ui/sonner', () => ({
   Toaster: () => <div data-testid="global-toaster" />,
 }));
 
-vi.mock('@/features/auth/components/LoginPage', () => ({
+vi.mock('@/features/auth/pages/LoginPage', () => ({
   LoginPage: () => <div>Página de acceso</div>,
 }));
 
