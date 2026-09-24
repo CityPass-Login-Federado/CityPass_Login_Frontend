@@ -168,6 +168,7 @@ systemManagement/
 ├── hooks/
 │   ├── usePeople.ts             # Consultas y mutaciones de usuarios
 │   ├── useGroups.ts             # Consultas y mutaciones de grupos
+│   ├── useModules.ts            # Catálogo de módulos expuesto por el backend
 │   └── useDebouncedValue.ts     # Demora búsquedas antes de consultar
 ├── schemas/
 │   └── systemManagementSchemas.ts
@@ -177,7 +178,7 @@ systemManagement/
     ├── cacheReconciliation.ts   # Invalidación posterior a mutaciones
     ├── errors.ts                # Mensajes de error del panel
     ├── groups.ts                # Nombres y claves de grupos
-    ├── modules.ts               # Catálogo y nombres de módulos
+    ├── modules.ts               # Normalización y nombres visibles de módulos
     ├── pagination.ts            # Normalización de respuestas paginadas
     └── queryKeys.ts             # Claves de caché de TanStack Query
 ```
@@ -188,6 +189,7 @@ systemManagement/
 - `ManagementPageLayout` contiene la estructura compartida, la navegación lateral y el menú del usuario.
 - `UsersSection` y `GroupsSection` coordinan filtros, paginación, consultas y diálogos.
 - `UsersTable` y `GroupsTable` se ocupan de presentar filas y acciones.
+- El administrador global obtiene los módulos desde `GET /panel/modules`; el frontend conserva solamente sus nombres de presentación y usa el identificador del backend en filtros y operaciones.
 - Los componentes `*Dialog` contienen formularios o confirmaciones específicas.
 - `SectionState` y `TablePagination` resuelven estados visuales reutilizados por ambas secciones.
 

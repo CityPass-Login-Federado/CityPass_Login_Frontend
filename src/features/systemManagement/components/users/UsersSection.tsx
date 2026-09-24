@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   AlertDialog,
@@ -14,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 import { useGroups } from '../../hooks/useGroups';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import { useModules } from '../../hooks/useModules';
 import { usePeople, useSetPersonStatus } from '../../hooks/usePeople';
 import {
   type NoticeHandler,
@@ -48,6 +49,11 @@ export const UsersSection = ({
   const [selectedPerson, setSelectedPerson] = useState<PanelPerson | null>(null);
   const [statusPerson, setStatusPerson] = useState<PanelPerson | null>(null);
   const debouncedSearch = useDebouncedValue(search);
+  const modulesQuery = useModules({ enabled: isGeneralAdmin });
+  const modules = useMemo(() => modulesQuery.data ?? [], [modulesQuery.data]);
+  const isModuleCatalogUnavailable =
+    isGeneralAdmin &&
+    (modulesQuery.isPending || modules.length === 0);
 
   const selectedModule = isGeneralAdmin && module !== 'all' ? module : undefined;
   const disabled =
@@ -74,6 +80,19 @@ export const UsersSection = ({
     : groupsQuery.isPending || groupsQuery.isPlaceholderData
       ? 'loading'
         : 'ready';
+
+  useEffect(() => {
+    if (
+      module !== 'all' &&
+      !modulesQuery.isPending &&
+      !modulesQuery.isError &&
+      !modules.some((item) => item.id === module)
+    ) {
+      setModule('all');
+      setGroup('all');
+      setPage(0);
+    }
+  }, [module, modules, modulesQuery.isError, modulesQuery.isPending]);
 
   const groupNamesByUser = useMemo(() => {
     const membership = new Map<string, string[]>();
@@ -143,8 +162,10 @@ export const UsersSection = ({
             group={group}
             status={status}
             module={module}
+            modules={modules}
             groups={groupsQuery.data?.content ?? []}
             isGroupFilterDisabled={groupDataStatus !== 'ready'}
+            isModuleFilterDisabled={isModuleCatalogUnavailable}
             isGeneralAdmin={isGeneralAdmin}
             onSearchChange={(value) =>
               handleFilterChange(() => setSearch(value))
@@ -163,6 +184,25 @@ export const UsersSection = ({
             }
             onAddUser={handleAddPerson}
           />
+
+          {isGeneralAdmin && modulesQuery.isError && modules.length === 0 && (
+            <p
+              role="alert"
+              className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+            >
+              No se pudieron cargar los módulos. El filtro y la creación de
+              usuarios por módulo permanecerán deshabilitados.
+            </p>
+          )}
+
+          {isGeneralAdmin &&
+            !modulesQuery.isPending &&
+            !modulesQuery.isError &&
+            modules.length === 0 && (
+              <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                No hay módulos disponibles para administrar.
+              </p>
+            )}
 
           {groupsQuery.isError && (
             <p
@@ -213,6 +253,9 @@ export const UsersSection = ({
         person={selectedPerson}
         isGeneralAdmin={isGeneralAdmin}
         initialModule={selectedModule}
+        modules={modules}
+        isModulesLoading={modulesQuery.isPending}
+        hasModulesError={modulesQuery.isError}
         onOpenChange={setIsPersonDialogOpen}
         onSuccess={(message) => onNotice('success', message)}
         onError={(message) => onNotice('error', message)}

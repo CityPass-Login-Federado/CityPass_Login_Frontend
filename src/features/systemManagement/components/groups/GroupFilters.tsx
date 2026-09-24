@@ -10,13 +10,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import { type GroupReservationFilter } from '../../types';
-import { CITYPASS_MODULES } from '../../utils/modules';
+import {
+  type GroupReservationFilter,
+  type ModuleSummary,
+} from '../../types';
 
 interface GroupFiltersProps {
   search: string;
   reservation: GroupReservationFilter;
   module: string;
+  modules: ModuleSummary[];
+  isModuleFilterDisabled: boolean;
   isGeneralAdmin: boolean;
   onSearchChange: (value: string) => void;
   onReservationChange: (value: GroupReservationFilter) => void;
@@ -28,6 +32,8 @@ export const GroupFilters = ({
   search,
   reservation,
   module,
+  modules,
+  isModuleFilterDisabled,
   isGeneralAdmin,
   onSearchChange,
   onReservationChange,
@@ -67,7 +73,11 @@ export const GroupFilters = ({
     </Select>
 
     {isGeneralAdmin && (
-      <Select value={module} onValueChange={onModuleChange}>
+      <Select
+        value={module}
+        onValueChange={onModuleChange}
+        disabled={isModuleFilterDisabled}
+      >
         <SelectTrigger
           className="h-9 w-full lg:w-[190px] lg:shrink-0"
           aria-label="Filtrar por módulo"
@@ -77,7 +87,7 @@ export const GroupFilters = ({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Todos los módulos</SelectItem>
-          {CITYPASS_MODULES.map((item) => (
+          {modules.map((item) => (
             <SelectItem key={item.id} value={item.id}>
               {item.name}
             </SelectItem>

@@ -7,6 +7,10 @@ import { CreateGroupDialog } from './CreateGroupDialog';
 const mocks = vi.hoisted(() => ({
   mutate: vi.fn(),
 }));
+const modules = [
+  { id: 'reclamos', name: 'Reclamos' },
+  { id: 'eda', name: 'EDA' },
+];
 
 vi.mock('../../hooks/useGroups', () => ({
   useCreateGroup: () => ({ isPending: false, mutate: mocks.mutate }),
@@ -30,6 +34,9 @@ describe('CreateGroupDialog', () => {
         open
         isGeneralAdmin={false}
         initialModule="reclamos"
+        modules={modules}
+        isModulesLoading={false}
+        hasModulesError={false}
         onOpenChange={onOpenChange}
         onSuccess={onSuccess}
         onError={vi.fn()}
@@ -59,6 +66,9 @@ describe('CreateGroupDialog', () => {
       <CreateGroupDialog
         open
         isGeneralAdmin
+        modules={modules}
+        isModulesLoading={false}
+        hasModulesError={false}
         onOpenChange={vi.fn()}
         onSuccess={vi.fn()}
         onError={vi.fn()}
@@ -86,6 +96,9 @@ describe('CreateGroupDialog', () => {
         open
         isGeneralAdmin
         initialModule="estacionamiento"
+        modules={modules}
+        isModulesLoading={false}
+        hasModulesError={false}
         onOpenChange={vi.fn()}
         onSuccess={vi.fn()}
         onError={onError}
@@ -105,5 +118,47 @@ describe('CreateGroupDialog', () => {
       ),
     );
     expect(onError).toHaveBeenCalledWith('No se pudo crear el grupo.');
+  });
+
+  test('bloquea la creación mientras carga el catálogo de módulos', () => {
+    render(
+      <CreateGroupDialog
+        open
+        isGeneralAdmin
+        modules={[]}
+        isModulesLoading
+        hasModulesError={false}
+        onOpenChange={vi.fn()}
+        onSuccess={vi.fn()}
+        onError={vi.fn()}
+      />,
+    );
+
+    const moduleSelect = screen.getByRole('combobox', {
+      name: 'Seleccionar módulo del grupo',
+    });
+    expect(moduleSelect).toBeDisabled();
+    expect(moduleSelect).toHaveTextContent('Cargando módulos…');
+    expect(screen.getByRole('button', { name: 'Crear grupo' })).toBeDisabled();
+  });
+
+  test('informa el error del catálogo y evita crear sin un módulo válido', () => {
+    render(
+      <CreateGroupDialog
+        open
+        isGeneralAdmin
+        modules={[]}
+        isModulesLoading={false}
+        hasModulesError
+        onOpenChange={vi.fn()}
+        onSuccess={vi.fn()}
+        onError={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'No se pudieron cargar los módulos.',
+    );
+    expect(screen.getByRole('button', { name: 'Crear grupo' })).toBeDisabled();
   });
 });

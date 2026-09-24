@@ -10,17 +10,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import { type PanelGroup, type PersonStatusFilter } from '../../types';
+import {
+  type ModuleSummary,
+  type PanelGroup,
+  type PersonStatusFilter,
+} from '../../types';
 import { getUniqueGroupNames } from '../../utils/groups';
-import { CITYPASS_MODULES } from '../../utils/modules';
 
 interface UserFiltersProps {
   search: string;
   group: string;
   status: PersonStatusFilter;
   module: string;
+  modules: ModuleSummary[];
   groups: PanelGroup[];
   isGroupFilterDisabled: boolean;
+  isModuleFilterDisabled: boolean;
   isGeneralAdmin: boolean;
   onSearchChange: (value: string) => void;
   onGroupChange: (value: string) => void;
@@ -34,8 +39,10 @@ export const UserFilters = ({
   group,
   status,
   module,
+  modules,
   groups,
   isGroupFilterDisabled,
+  isModuleFilterDisabled,
   isGeneralAdmin,
   onSearchChange,
   onGroupChange,
@@ -92,7 +99,11 @@ export const UserFilters = ({
         </Select>
 
         {isGeneralAdmin && (
-          <Select value={module} onValueChange={onModuleChange}>
+          <Select
+            value={module}
+            onValueChange={onModuleChange}
+            disabled={isModuleFilterDisabled}
+          >
             <SelectTrigger
               className="col-span-2 sm:w-48"
               aria-label="Filtrar por módulo"
@@ -101,7 +112,7 @@ export const UserFilters = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los módulos</SelectItem>
-              {CITYPASS_MODULES.map((item) => (
+              {modules.map((item) => (
                 <SelectItem key={item.id} value={item.id}>
                   {item.name}
                 </SelectItem>

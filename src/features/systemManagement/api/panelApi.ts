@@ -31,6 +31,11 @@ const withoutEmptyParams = <T extends object>(params: T) =>
 const moduleConfig = (module?: string) =>
   module ? { params: { module } } : undefined;
 
+export const fetchModules = async (): Promise<string[]> => {
+  const response = await axiosInstance.get<string[]>('/panel/modules');
+  return response.data;
+};
+
 export const fetchPeople = async (
   params: PeopleListParams,
 ): Promise<PaginatedResponse<PanelPerson>> => {

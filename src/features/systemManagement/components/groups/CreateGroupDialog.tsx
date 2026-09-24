@@ -26,13 +26,16 @@ import {
   groupFormSchema,
   type GroupFormValues,
 } from '../../schemas/systemManagementSchemas';
+import { type ModuleSummary } from '../../types';
 import { getPanelErrorMessage } from '../../utils/errors';
-import { CITYPASS_MODULES } from '../../utils/modules';
 
 interface CreateGroupDialogProps {
   open: boolean;
   isGeneralAdmin: boolean;
   initialModule?: string;
+  modules: ModuleSummary[];
+  isModulesLoading: boolean;
+  hasModulesError: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
@@ -42,11 +45,16 @@ export const CreateGroupDialog = ({
   open,
   isGeneralAdmin,
   initialModule,
+  modules,
+  isModulesLoading,
+  hasModulesError,
   onOpenChange,
   onSuccess,
   onError,
 }: CreateGroupDialogProps) => {
   const mutation = useCreateGroup();
+  const isModuleSelectionUnavailable =
+    isGeneralAdmin && (isModulesLoading || modules.length === 0);
   const {
     register,
     control,
@@ -107,17 +115,25 @@ export const CreateGroupDialog = ({
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
-                    disabled={mutation.isPending}
+                    disabled={
+                      mutation.isPending || isModuleSelectionUnavailable
+                    }
                   >
                     <SelectTrigger
                       id="groupModule"
                       aria-label="Seleccionar módulo del grupo"
                       aria-invalid={!!errors.module}
                     >
-                      <SelectValue placeholder="Seleccione un módulo" />
+                      <SelectValue
+                        placeholder={
+                          isModulesLoading
+                            ? 'Cargando módulos…'
+                            : 'Seleccione un módulo'
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
-                      {CITYPASS_MODULES.map((item) => (
+                      {modules.map((item) => (
                         <SelectItem key={item.id} value={item.id}>
                           {item.name}
                         </SelectItem>
@@ -126,6 +142,11 @@ export const CreateGroupDialog = ({
                   </Select>
                 )}
               />
+              {hasModulesError && modules.length === 0 && (
+                <p role="alert" className="text-xs text-destructive">
+                  No se pudieron cargar los módulos.
+                </p>
+              )}
               {errors.module && (
                 <p role="alert" className="text-xs text-destructive">
                   {errors.module.message}
@@ -157,7 +178,11 @@ export const CreateGroupDialog = ({
           >
             Cancelar
           </Button>
-          <Button type="submit" form="group-form" disabled={mutation.isPending}>
+          <Button
+            type="submit"
+            form="group-form"
+            disabled={mutation.isPending || isModuleSelectionUnavailable}
+          >
             {mutation.isPending ? 'Creando…' : 'Crear grupo'}
           </Button>
         </DialogFooter>

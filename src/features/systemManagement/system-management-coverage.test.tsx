@@ -35,6 +35,14 @@ vi.mock('./hooks/useGroups', () => ({
   }),
 }));
 
+vi.mock('./hooks/useModules', () => ({
+  useModules: () => ({
+    data: [],
+    isPending: false,
+    isError: false,
+  }),
+}));
+
 describe('system management coverage additions', () => {
   test('renderiza estados de carga, error y vacío', () => {
     const { rerender } = render(<SectionLoading />);

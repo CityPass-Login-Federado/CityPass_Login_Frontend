@@ -1,18 +1,27 @@
 import { type ModuleSummary } from '../types';
 
-export const CITYPASS_MODULES: ModuleSummary[] = [
-  { id: 'movilidad', name: 'Movilidad' },
-  { id: 'residuos', name: 'Gestión de Residuos' },
-  { id: 'reclamos', name: 'Reclamos' },
-  { id: 'emergencias', name: 'Emergencias y Seguridad' },
-  { id: 'espacios', name: 'Espacios Públicos' },
-  { id: 'analitica', name: 'Analítica Urbana' },
-];
+const MODULE_NAMES: Record<string, string> = {
+  movilidad: 'Movilidad',
+  residuos: 'Gestión de Residuos',
+  reclamos: 'Reclamos',
+  emergencias: 'Emergencias y Seguridad',
+  espacios: 'Espacios Públicos',
+  analitica: 'Analítica Urbana',
+  eda: 'EDA',
+};
 
 export const getModuleName = (moduleId?: string) => {
   if (!moduleId) return '—';
-  return (
-    CITYPASS_MODULES.find((module) => module.id === moduleId.toLowerCase())
-      ?.name ?? moduleId
+  return MODULE_NAMES[moduleId.toLowerCase()] ?? moduleId;
+};
+
+export const toModuleSummaries = (moduleIds: string[]): ModuleSummary[] => {
+  const uniqueModuleIds = new Set(
+    moduleIds.map((moduleId) => moduleId.trim().toLowerCase()).filter(Boolean),
   );
+
+  return Array.from(uniqueModuleIds, (id) => ({
+    id,
+    name: getModuleName(id),
+  }));
 };
