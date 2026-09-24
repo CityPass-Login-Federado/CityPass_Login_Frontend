@@ -1,9 +1,9 @@
-# ADR-010: Tailwind CSS y Shadcn UI para el Sistema de Diseño
+# ADR-F003: Tailwind CSS y shadcn/ui para el sistema de diseño
 
 ## Estado: Aceptado
 
 ## Contexto
-La rúbrica del proyecto exige un prototipo funcional y evalúa la experiencia de usuario (UX/UI) del módulo con 10 puntos. El sistema debe verse moderno, ser responsivo y garantizar accesibilidad sin consumir todo el tiempo del sprint escribiendo CSS personalizado.
+La aplicación incluye flujos públicos de autenticación y pantallas protegidas de gestión. Todas ellas necesitan una interfaz consistente, responsiva y mantenible, con componentes reutilizables y una base adecuada para implementar accesibilidad sin duplicar estilos.
 
 ## Opciones consideradas
 
@@ -19,17 +19,20 @@ La rúbrica del proyecto exige un prototipo funcional y evalúa la experiencia d
 | Componentes listos para usar | Estética rígida (todos los sitios se ven iguales) |
 | Rápidos de implementar | Sobrescribir estilos es muy complejo y propenso a errores |
 
-### Opción C: Tailwind CSS + Shadcn UI (Elegida)
+### Opción C: Tailwind CSS + shadcn/ui (Elegida)
 | Pros | Contras |
 |------|---------|
 | Estilos por utilidades (muy rápido de escribir) | El HTML puede quedar un poco verboso con muchas clases |
-| Shadcn UI da control total (el código del componente te pertenece) | Requiere aprender la nomenclatura de clases de Tailwind |
-| Accesibilidad nativa garantizada (Radix UI) | |
+| shadcn/ui incorpora al repositorio el código de los componentes | Requiere mantener localmente esos componentes |
+| Sus primitivas de Radix UI aportan comportamientos accesibles de base | La accesibilidad final depende de cómo se componga y pruebe cada pantalla |
 
 ## Decisión
-**Opción C: Tailwind CSS + Shadcn UI**
-Elegimos este stack para asegurar los 10 puntos de la dimensión UX/UI. Shadcn no es una librería de NPM que se instala, sino código que se copia al proyecto, dándonos el 100% del control sobre el renderizado. Tailwind nos permitirá maquetar formularios de login responsivos a una velocidad mucho mayor que escribiendo CSS clásico.
+**Opción C: Tailwind CSS + shadcn/ui**
+
+Elegimos este stack para mantener una identidad visual consistente sin depender de una librería de componentes con estilos cerrados. Los componentes de shadcn/ui se incorporan al repositorio y pueden adaptarse a las necesidades del producto, mientras que Tailwind permite aplicar el sistema visual de manera uniforme en los flujos de autenticación y administración.
 
 ## Consecuencias
-- Todos los estilos se manejan mediante clases utilitarias de Tailwind.
-- Los componentes base (botones, inputs, modales) vivirán en `src/components/ui/` y podrán ser modificados libremente.
+- Los estilos de las pantallas se expresan principalmente mediante clases utilitarias de Tailwind.
+- Los tokens globales del tema y los estilos base se mantienen en `src/index.css` y `tailwind.config.js`.
+- Los componentes reutilizables de interfaz viven en `src/components/ui/` y forman parte del código mantenido por el equipo.
+- El uso de primitivas accesibles no reemplaza la validación de etiquetas, navegación por teclado, foco, contraste y mensajes de error en cada flujo.
