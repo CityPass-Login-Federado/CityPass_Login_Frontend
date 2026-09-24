@@ -6,8 +6,10 @@ import { Toaster } from '@/components/ui/sonner';
 import { LoginPage } from '@/features/auth/components/LoginPage';
 import { ForgotPasswordPage } from '@/features/auth/components/ForgotPasswordPage';
 import { PasswordResetPage } from '@/features/auth/components/PasswordResetPage';
+import { AuthenticatedRoute } from '@/features/auth/components/AuthenticatedRoute';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { UnauthorizedPage } from '@/features/auth/components/UnauthorizedPage';
+import { UserHomePage } from '@/features/auth/components/UserHomePage';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { SystemManagementPage } from '@/features/systemManagement/components/SystemManagementPage';
 import { GroupsManagementPage } from '@/features/systemManagement/components/GroupsManagementPage';
@@ -29,6 +31,9 @@ export const App = () => {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<PasswordResetPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
+          <Route element={<AuthenticatedRoute />}>
+            <Route path="/home" element={<UserHomePage />} />
+          </Route>
           <Route element={<ProtectedRoute />}>
             <Route
               path="/panel"
