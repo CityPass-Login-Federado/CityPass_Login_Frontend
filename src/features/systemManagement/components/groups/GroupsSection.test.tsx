@@ -63,4 +63,49 @@ describe('GroupsSection', () => {
     ).toBeInTheDocument();
   });
 
+  test('informa el error del catálogo y deshabilita el filtro de módulos', () => {
+    mocks.useModules.mockReturnValue({
+      data: undefined,
+      isError: true,
+      isPending: false,
+    });
+
+    render(<GroupsSection isGeneralAdmin onNotice={vi.fn()} />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'No se pudieron cargar los módulos',
+    );
+    expect(
+      screen.getByRole('combobox', { name: 'Filtrar por módulo' }),
+    ).toBeDisabled();
+  });
+
+  test('informa cuando el backend no devuelve módulos', () => {
+    mocks.useModules.mockReturnValue({
+      data: [],
+      isError: false,
+      isPending: false,
+    });
+
+    render(<GroupsSection isGeneralAdmin onNotice={vi.fn()} />);
+
+    expect(
+      screen.getByText('No hay módulos disponibles para administrar.'),
+    ).toBeInTheDocument();
+  });
+
+  test('mantiene deshabilitado el filtro mientras carga los módulos', () => {
+    mocks.useModules.mockReturnValue({
+      data: undefined,
+      isError: false,
+      isPending: true,
+    });
+
+    render(<GroupsSection isGeneralAdmin onNotice={vi.fn()} />);
+
+    expect(
+      screen.getByRole('combobox', { name: 'Filtrar por módulo' }),
+    ).toBeDisabled();
+  });
+
 });

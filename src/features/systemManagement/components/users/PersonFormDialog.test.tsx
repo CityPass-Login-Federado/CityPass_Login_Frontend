@@ -165,4 +165,48 @@ describe('PersonFormDialog', () => {
     expect(screen.queryByLabelText('Contraseña temporal')).not.toBeInTheDocument();
     expect(onError).toHaveBeenCalledWith('No se pudo actualizar el usuario.');
   });
+
+  test('bloquea la creación mientras carga el catálogo de módulos', () => {
+    render(
+      <PersonFormDialog
+        open
+        person={null}
+        isGeneralAdmin
+        modules={[]}
+        isModulesLoading
+        hasModulesError={false}
+        onOpenChange={vi.fn()}
+        onSuccess={vi.fn()}
+        onError={vi.fn()}
+      />,
+    );
+
+    const moduleSelect = screen.getByRole('combobox', {
+      name: 'Seleccionar módulo del usuario',
+    });
+    expect(moduleSelect).toBeDisabled();
+    expect(moduleSelect).toHaveTextContent('Cargando módulos…');
+    expect(screen.getByRole('button', { name: 'Crear usuario' })).toBeDisabled();
+  });
+
+  test('informa el error del catálogo y evita crear sin un módulo válido', () => {
+    render(
+      <PersonFormDialog
+        open
+        person={null}
+        isGeneralAdmin
+        modules={[]}
+        isModulesLoading={false}
+        hasModulesError
+        onOpenChange={vi.fn()}
+        onSuccess={vi.fn()}
+        onError={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'No se pudieron cargar los módulos.',
+    );
+    expect(screen.getByRole('button', { name: 'Crear usuario' })).toBeDisabled();
+  });
 });

@@ -285,4 +285,86 @@ describe('AssignUserToGroupCard', () => {
       expect.any(Object),
     );
   });
+
+  test('bloquea la selección mientras carga el catálogo de módulos', () => {
+    mocks.useModules.mockReturnValue({
+      data: undefined,
+      isError: false,
+      isPending: true,
+    });
+
+    render(<AssignUserToGroupCard isGeneralAdmin onNotice={vi.fn()} />);
+
+    const moduleSelect = screen.getByRole('combobox', {
+      name: 'Seleccionar módulo para asignaciones',
+    });
+    expect(moduleSelect).toBeDisabled();
+    expect(moduleSelect).toHaveTextContent('Cargando módulos…');
+  });
+
+  test('informa el error del catálogo y conserva bloqueadas las asignaciones', () => {
+    mocks.useModules.mockReturnValue({
+      data: undefined,
+      isError: true,
+      isPending: false,
+    });
+
+    render(<AssignUserToGroupCard isGeneralAdmin onNotice={vi.fn()} />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'No se pudieron cargar los módulos.',
+    );
+    expect(
+      screen.getByRole('button', { name: 'Asignar usuarios a grupos' }),
+    ).toBeDisabled();
+  });
+
+  test('informa cuando no existen módulos administrables', () => {
+    mocks.useModules.mockReturnValue({
+      data: [],
+      isError: false,
+      isPending: false,
+    });
+
+    render(<AssignUserToGroupCard isGeneralAdmin onNotice={vi.fn()} />);
+
+    expect(
+      screen.getByText('No hay módulos disponibles para administrar.'),
+    ).toBeInTheDocument();
+  });
+
+  test('limpia las selecciones cuando el módulo deja de existir', async () => {
+    let modules = [
+      { id: 'reclamos', name: 'Reclamos' },
+      { id: 'eda', name: 'EDA' },
+    ];
+    mocks.useModules.mockImplementation(() => ({
+      data: modules,
+      isError: false,
+      isPending: false,
+    }));
+    const { container, rerender } = render(
+      <AssignUserToGroupCard isGeneralAdmin onNotice={vi.fn()} />,
+    );
+    const nativeModuleSelect = container.querySelector('select');
+    expect(nativeModuleSelect).not.toBeNull();
+
+    fireEvent.change(nativeModuleSelect!, { target: { value: 'eda' } });
+    await waitFor(() =>
+      expect(mocks.usePeople).toHaveBeenLastCalledWith(
+        expect.objectContaining({ module: 'eda' }),
+        { enabled: true },
+      ),
+    );
+
+    modules = [{ id: 'reclamos', name: 'Reclamos' }];
+    rerender(<AssignUserToGroupCard isGeneralAdmin onNotice={vi.fn()} />);
+
+    await waitFor(() =>
+      expect(mocks.usePeople).toHaveBeenLastCalledWith(
+        expect.objectContaining({ module: undefined }),
+        { enabled: false },
+      ),
+    );
+  });
 });
