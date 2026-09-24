@@ -25,7 +25,7 @@ Este documento define las reglas de estilo y nomenclatura que todo el equipo del
 
 ## 4. Arquitectura y Estructura
 * **Tipado Estricto:** Evitar el uso de `any` bajo cualquier circunstancia. Si no se conoce el tipo exacto, utilizar `unknown` o definir la interfaz correspondiente basándose en el contrato OpenAPI.
-* **Importaciones Limpias:** Priorizar el uso de alias de rutas (Absolute Imports) configurados en Vite (ej: `@/features/auth/components`) en lugar de rutas relativas largas y confusas (`../../../../features/`).
+* **Importaciones Limpias:** Priorizar el uso de alias de rutas (Absolute Imports) configurados en Vite (ej: `@/features/auth/pages`) en lugar de rutas relativas largas y confusas (`../../../../features/`).
 * **Estilos:** No utilizar estilos en línea (`style={{ color: 'red' }}`). Todos los estilos deben aplicarse mediante clases utilitarias de Tailwind CSS a través de la propiedad `className`.
 
 ## 5. Testing
