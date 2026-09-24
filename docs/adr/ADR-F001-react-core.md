@@ -1,9 +1,11 @@
-# ADR-008: React 18 como Librería Core de Interfaz de Usuario
+# ADR-F001: React 18 como librería principal de interfaz de usuario
 
 ## Estado: Aceptado
 
 ## Contexto
-El módulo de Login Federado es la puerta de entrada a la plataforma CityPass+ y protegerá todos los endpoints del sistema. Necesitamos desarrollar una Single Page Application (SPA) que sea rápida, ligera y que nos permita alcanzar un MVP funcional para las entregas de los Sprints 1 y 2.
+El módulo de Login Federado es la puerta de entrada a la plataforma CityPass+. El frontend debe resolver los flujos de autenticación y recuperación de contraseña, además de las pantallas protegidas para la gestión de usuarios y grupos.
+
+Necesitamos una Single Page Application (SPA) mantenible, con una experiencia de usuario fluida y un ecosistema que permita integrar enrutamiento, consumo de APIs, estado cliente y estado de servidor.
 
 ## Opciones consideradas
 
@@ -19,13 +21,16 @@ El módulo de Login Federado es la puerta de entrada a la plataforma CityPass+ y
 |------|---------|
 | Arquitectura funcional y flexible (Hooks) | Requiere elegir librerías de terceros (enrutamiento, peticiones) |
 | Curva de aprendizaje más rápida para llegar al MVP | No opina sobre la arquitectura de carpetas |
-| Bundle inicial muy ligero (ideal para un portal de login) | |
-| Excelente compatibilidad futura para Micro-Frontends | |
+| Permite incorporar solamente las dependencias necesarias para la aplicación | La integración entre esas dependencias queda bajo responsabilidad del equipo |
+| Ecosistema amplio y buen soporte para pruebas de componentes | |
 
 ## Decisión
 **Opción B: React 18**
-Elegimos React porque priorizamos la velocidad de carga inicial y la agilidad de desarrollo. Al tener un cuatrimestre con tiempos limitados, React minimiza la fricción arquitectónica inicial y nos asegura tener el MVP funcional en las primeras entregas del proyecto. Además, su menor peso asegura que los ciudadanos accedan al login casi instantáneamente.
+
+Elegimos React por su modelo de componentes funcionales, su ecosistema y la experiencia previa del equipo. La flexibilidad de la librería permite construir tanto los flujos públicos de autenticación como el panel protegido sin incorporar las capacidades de un framework de renderizado del lado del servidor que esta aplicación no necesita.
 
 ## Consecuencias
-- Utilizaremos componentes funcionales y Hooks.
-- Debemos seleccionar y configurar librerías adicionales para el cliente HTTP (Axios) y el estado (Zustand/React Query).
+- La interfaz se implementa con componentes funcionales y Hooks.
+- El enrutamiento del lado del cliente se resuelve con React Router.
+- Axios se utiliza como cliente HTTP, TanStack Query para el estado de servidor y Zustand para el estado compartido de la sesión.
+- Las actualizaciones mayores de React y de las librerías que integran su ecosistema deben evaluarse explícitamente para evitar incompatibilidades.
