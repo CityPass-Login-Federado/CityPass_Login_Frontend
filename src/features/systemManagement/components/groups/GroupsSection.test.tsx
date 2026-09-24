@@ -5,11 +5,13 @@ import { GroupsSection } from './GroupsSection';
 
 const mocks = vi.hoisted(() => ({
   useGroups: vi.fn(),
+  useModules: vi.fn(),
 }));
 
 vi.mock('../../hooks/useGroups', () => ({
   useGroups: mocks.useGroups,
 }));
+vi.mock('../../hooks/useModules', () => ({ useModules: mocks.useModules }));
 
 vi.mock('./CreateGroupDialog', () => ({
   CreateGroupDialog: () => null,
@@ -23,6 +25,14 @@ describe('GroupsSection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.useGroups.mockReturnValue({ isPending: true });
+    mocks.useModules.mockReturnValue({
+      data: [
+        { id: 'reclamos', name: 'Reclamos' },
+        { id: 'eda', name: 'EDA' },
+      ],
+      isError: false,
+      isPending: false,
+    });
   });
 
   test('usa el estilo primario para crear un grupo', () => {

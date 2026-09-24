@@ -7,6 +7,7 @@ import { AssignUserToGroupCard } from './AssignUserToGroupCard';
 const mocks = vi.hoisted(() => ({
   usePeople: vi.fn(),
   useGroups: vi.fn(),
+  useModules: vi.fn(),
   useAssignUsersToGroups: vi.fn(),
   mutate: vi.fn(),
 }));
@@ -16,6 +17,7 @@ vi.mock('../../hooks/useGroups', () => ({
   useGroups: mocks.useGroups,
   useAssignUsersToGroups: mocks.useAssignUsersToGroups,
 }));
+vi.mock('../../hooks/useModules', () => ({ useModules: mocks.useModules }));
 
 const peopleData = {
   content: [
@@ -65,6 +67,14 @@ describe('AssignUserToGroupCard', () => {
     vi.clearAllMocks();
     mocks.usePeople.mockReturnValue(readyQuery(peopleData));
     mocks.useGroups.mockReturnValue(readyQuery(groupsData));
+    mocks.useModules.mockReturnValue({
+      data: [
+        { id: 'reclamos', name: 'Reclamos' },
+        { id: 'eda', name: 'EDA' },
+      ],
+      isError: false,
+      isPending: false,
+    });
     mocks.useAssignUsersToGroups.mockReturnValue({
       isPending: false,
       mutate: mocks.mutate,

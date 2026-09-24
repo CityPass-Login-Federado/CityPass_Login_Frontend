@@ -7,7 +7,7 @@ import { describe, expect, test, vi } from 'vitest';
 
 import { getPanelErrorMessage } from './errors';
 import { getReservedParam, getUniqueGroupNames } from './groups';
-import { getModuleName, CITYPASS_MODULES } from './modules';
+import { getModuleName, toModuleSummaries } from './modules';
 import { normalizePaginatedResponse } from './pagination';
 import { panelQueryKeys } from './queryKeys';
 import { reconcileGroups, reconcilePeopleAndGroups } from './cacheReconciliation';
@@ -83,8 +83,19 @@ describe('system management utils', () => {
 
   test('getModuleName devuelve label por id y fallback por nombre no registrado', () => {
     expect(getModuleName('reclamos')).toBe('Reclamos');
+    expect(getModuleName('EDA')).toBe('EDA');
     expect(getModuleName('custom')).toBe('custom');
     expect(getModuleName()).toBe('—');
+  });
+
+  test('toModuleSummaries conserva el orden del backend y normaliza duplicados', () => {
+    expect(
+      toModuleSummaries(['reclamos', ' EDA ', 'reclamos', 'nuevo-modulo']),
+    ).toEqual([
+      { id: 'reclamos', name: 'Reclamos' },
+      { id: 'eda', name: 'EDA' },
+      { id: 'nuevo-modulo', name: 'nuevo-modulo' },
+    ]);
   });
 
   test('normalizePaginatedResponse maneja arrays y valores vacíos', () => {
@@ -125,6 +136,10 @@ describe('system management utils', () => {
       'groups',
       { page: 0, size: 10 },
     ]);
+    expect(panelQueryKeys.modules()).toEqual([
+      'system-management',
+      'modules',
+    ]);
   });
 
   test('reconcile functions invalidan todas las consultas relevantes', async () => {
@@ -142,7 +157,6 @@ describe('system management utils', () => {
 
     expect(peopleSpy).toHaveBeenCalled();
     expect(groupsSpy).toHaveBeenCalled();
-    expect(CITYPASS_MODULES.length).toBeGreaterThan(0);
   });
 
   test('hooks de people y groups respetan el flag enabled sin ejecutar queries en deshabilitado', async () => {

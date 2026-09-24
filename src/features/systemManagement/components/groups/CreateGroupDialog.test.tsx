@@ -7,6 +7,10 @@ import { CreateGroupDialog } from './CreateGroupDialog';
 const mocks = vi.hoisted(() => ({
   mutate: vi.fn(),
 }));
+const modules = [
+  { id: 'reclamos', name: 'Reclamos' },
+  { id: 'eda', name: 'EDA' },
+];
 
 vi.mock('../../hooks/useGroups', () => ({
   useCreateGroup: () => ({ isPending: false, mutate: mocks.mutate }),
@@ -30,6 +34,9 @@ describe('CreateGroupDialog', () => {
         open
         isGeneralAdmin={false}
         initialModule="reclamos"
+        modules={modules}
+        isModulesLoading={false}
+        hasModulesError={false}
         onOpenChange={onOpenChange}
         onSuccess={onSuccess}
         onError={vi.fn()}
@@ -59,6 +66,9 @@ describe('CreateGroupDialog', () => {
       <CreateGroupDialog
         open
         isGeneralAdmin
+        modules={modules}
+        isModulesLoading={false}
+        hasModulesError={false}
         onOpenChange={vi.fn()}
         onSuccess={vi.fn()}
         onError={vi.fn()}
@@ -86,6 +96,9 @@ describe('CreateGroupDialog', () => {
         open
         isGeneralAdmin
         initialModule="estacionamiento"
+        modules={modules}
+        isModulesLoading={false}
+        hasModulesError={false}
         onOpenChange={vi.fn()}
         onSuccess={vi.fn()}
         onError={onError}

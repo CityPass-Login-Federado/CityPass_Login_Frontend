@@ -24,6 +24,10 @@ const person: PanelPerson = {
   disabled: false,
   module: 'reclamos',
 };
+const modules = [
+  { id: 'reclamos', name: 'Reclamos' },
+  { id: 'eda', name: 'EDA' },
+];
 
 describe('PersonFormDialog', () => {
   beforeEach(() => {
@@ -44,6 +48,9 @@ describe('PersonFormDialog', () => {
         person={null}
         isGeneralAdmin={false}
         initialModule="reclamos"
+        modules={modules}
+        isModulesLoading={false}
+        hasModulesError={false}
         onOpenChange={onOpenChange}
         onSuccess={onSuccess}
         onError={vi.fn()}
@@ -87,6 +94,9 @@ describe('PersonFormDialog', () => {
         open
         person={null}
         isGeneralAdmin
+        modules={modules}
+        isModulesLoading={false}
+        hasModulesError={false}
         onOpenChange={vi.fn()}
         onSuccess={vi.fn()}
         onError={vi.fn()}
@@ -118,6 +128,9 @@ describe('PersonFormDialog', () => {
         open
         person={person}
         isGeneralAdmin
+        modules={modules}
+        isModulesLoading={false}
+        hasModulesError={false}
         onOpenChange={vi.fn()}
         onSuccess={vi.fn()}
         onError={onError}

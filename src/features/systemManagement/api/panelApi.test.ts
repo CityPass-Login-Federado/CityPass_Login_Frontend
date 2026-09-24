@@ -8,6 +8,7 @@ import {
   createPerson,
   deleteGroup,
   fetchGroups,
+  fetchModules,
   fetchPeople,
   removeUserFromGroup,
   setPersonDisabled,
@@ -44,6 +45,24 @@ describe('panelApi', () => {
     expect(result.content).toHaveLength(1);
     expect(result.currentPage).toBe(1);
     expect(result.content[0].module).toBe('reclamos');
+  });
+
+  test('fetchModules consume el catálogo expuesto por el backend', async () => {
+    const modules = [
+      'movilidad',
+      'residuos',
+      'reclamos',
+      'emergencias',
+      'espacios',
+      'analitica',
+      'eda',
+    ];
+    const getSpy = vi
+      .spyOn(axiosInstance, 'get')
+      .mockResolvedValue({ data: modules });
+
+    await expect(fetchModules()).resolves.toEqual(modules);
+    expect(getSpy).toHaveBeenCalledWith('/panel/modules');
   });
 
   test('fetchPeople usa un tamaño seguro cuando el size llega a 0', async () => {

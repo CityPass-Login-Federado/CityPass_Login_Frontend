@@ -7,6 +7,7 @@ import { UsersSection } from './UsersSection';
 const mocks = vi.hoisted(() => ({
   usePeople: vi.fn(),
   useGroups: vi.fn(),
+  useModules: vi.fn(),
   useSetPersonStatus: vi.fn(),
 }));
 
@@ -16,6 +17,7 @@ vi.mock('../../hooks/usePeople', () => ({
 }));
 
 vi.mock('../../hooks/useGroups', () => ({ useGroups: mocks.useGroups }));
+vi.mock('../../hooks/useModules', () => ({ useModules: mocks.useModules }));
 
 vi.mock('./UserFilters', () => ({ UserFilters: () => null }));
 vi.mock('./PersonFormDialog', () => ({ PersonFormDialog: () => null }));
@@ -44,6 +46,14 @@ describe('UsersSection', () => {
       isError: false,
       isPending: false,
       isPlaceholderData: false,
+    });
+    mocks.useModules.mockReturnValue({
+      data: [
+        { id: 'reclamos', name: 'Reclamos' },
+        { id: 'eda', name: 'EDA' },
+      ],
+      isError: false,
+      isPending: false,
     });
     mocks.useSetPersonStatus.mockReturnValue({
       isPending: false,

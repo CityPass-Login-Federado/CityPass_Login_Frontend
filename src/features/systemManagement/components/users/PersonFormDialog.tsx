@@ -26,15 +26,17 @@ import {
   personFormSchema,
   type PersonFormValues,
 } from '../../schemas/systemManagementSchemas';
-import { type PanelPerson } from '../../types';
+import { type ModuleSummary, type PanelPerson } from '../../types';
 import { getPanelErrorMessage } from '../../utils/errors';
-import { CITYPASS_MODULES } from '../../utils/modules';
 
 interface PersonFormDialogProps {
   open: boolean;
   person: PanelPerson | null;
   isGeneralAdmin: boolean;
   initialModule?: string;
+  modules: ModuleSummary[];
+  isModulesLoading: boolean;
+  hasModulesError: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
@@ -54,6 +56,9 @@ export const PersonFormDialog = ({
   person,
   isGeneralAdmin,
   initialModule,
+  modules,
+  isModulesLoading,
+  hasModulesError,
   onOpenChange,
   onSuccess,
   onError,
@@ -62,6 +67,10 @@ export const PersonFormDialog = ({
   const updateMutation = useUpdatePerson();
   const isEditing = person !== null;
   const isPending = createMutation.isPending || updateMutation.isPending;
+  const isModuleSelectionUnavailable =
+    isGeneralAdmin &&
+    !isEditing &&
+    (isModulesLoading || modules.length === 0);
 
   const {
     register,
@@ -187,17 +196,25 @@ export const PersonFormDialog = ({
                     <Select
                       value={field.value}
                       onValueChange={field.onChange}
-                      disabled={isPending || isEditing}
+                      disabled={
+                        isPending || isEditing || isModuleSelectionUnavailable
+                      }
                     >
                       <SelectTrigger
                         id="personModule"
                         aria-label="Seleccionar módulo del usuario"
                         aria-invalid={!!errors.module}
                       >
-                        <SelectValue placeholder="Seleccione un módulo" />
+                        <SelectValue
+                          placeholder={
+                            isModulesLoading
+                              ? 'Cargando módulos…'
+                              : 'Seleccione un módulo'
+                          }
+                        />
                       </SelectTrigger>
                       <SelectContent>
-                        {CITYPASS_MODULES.map((item) => (
+                        {modules.map((item) => (
                           <SelectItem key={item.id} value={item.id}>
                             {item.name}
                           </SelectItem>
@@ -206,6 +223,11 @@ export const PersonFormDialog = ({
                     </Select>
                   )}
                 />
+                {hasModulesError && modules.length === 0 && (
+                  <p role="alert" className="mt-2 text-xs text-destructive">
+                    No se pudieron cargar los módulos.
+                  </p>
+                )}
               </FormField>
             </div>
           )}
@@ -292,7 +314,11 @@ export const PersonFormDialog = ({
           >
             Cancelar
           </Button>
-          <Button type="submit" form="person-form" disabled={isPending}>
+          <Button
+            type="submit"
+            form="person-form"
+            disabled={isPending || isModuleSelectionUnavailable}
+          >
             {isPending
               ? 'Guardando…'
               : isEditing

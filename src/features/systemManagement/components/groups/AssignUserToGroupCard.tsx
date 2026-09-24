@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 
 import { useAssignUsersToGroups, useGroups } from '../../hooks/useGroups';
+import { useModules } from '../../hooks/useModules';
 import { usePeople } from '../../hooks/usePeople';
 import {
   assignmentFormSchema,
@@ -26,7 +27,6 @@ import {
 } from '../../types';
 import { getPanelErrorMessage } from '../../utils/errors';
 import { getGroupDisplayName } from '../../utils/groups';
-import { CITYPASS_MODULES } from '../../utils/modules';
 import {
   CheckboxMultiSelect,
   type CheckboxMultiSelectOption,
@@ -46,6 +46,11 @@ export const AssignUserToGroupCard = ({
   const [module, setModule] = useState('');
   const [lastResponse, setLastResponse] =
     useState<BulkMembershipResponse | null>(null);
+  const modulesQuery = useModules({ enabled: isGeneralAdmin });
+  const modules = useMemo(() => modulesQuery.data ?? [], [modulesQuery.data]);
+  const isModuleCatalogUnavailable =
+    isGeneralAdmin &&
+    (modulesQuery.isPending || modules.length === 0);
   const {
     control,
     handleSubmit,
@@ -79,6 +84,25 @@ export const AssignUserToGroupCard = ({
     { enabled: hasModuleScope },
   );
   const mutation = useAssignUsersToGroups();
+
+  useEffect(() => {
+    if (
+      module &&
+      !modulesQuery.isPending &&
+      !modulesQuery.isError &&
+      !modules.some((item) => item.id === module)
+    ) {
+      setModule('');
+      reset({ memberUids: [], groupNames: [] });
+      setLastResponse(null);
+    }
+  }, [
+    module,
+    modules,
+    modulesQuery.isError,
+    modulesQuery.isPending,
+    reset,
+  ]);
 
   const userOptions = useMemo<CheckboxMultiSelectOption[]>(
     () =>
@@ -184,19 +208,39 @@ export const AssignUserToGroupCard = ({
                   <SelectTrigger
                     id="assignmentModule"
                     aria-label="Seleccionar módulo para asignaciones"
-                    disabled={mutation.isPending}
+                    disabled={
+                      mutation.isPending || isModuleCatalogUnavailable
+                    }
                   >
-                    <SelectValue placeholder="Seleccione un módulo" />
+                    <SelectValue
+                      placeholder={
+                        modulesQuery.isPending
+                          ? 'Cargando módulos…'
+                          : 'Seleccione un módulo'
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    {CITYPASS_MODULES.map((item) => (
+                    {modules.map((item) => (
                       <SelectItem key={item.id} value={item.id}>
                         {item.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {!selectedModule && (
+                {modulesQuery.isError && modules.length === 0 && (
+                  <p role="alert" className="text-xs text-destructive">
+                    No se pudieron cargar los módulos.
+                  </p>
+                )}
+                {!modulesQuery.isPending &&
+                  !modulesQuery.isError &&
+                  modules.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      No hay módulos disponibles para administrar.
+                    </p>
+                  )}
+                {!selectedModule && !isModuleCatalogUnavailable && (
                   <p className="text-xs text-muted-foreground">
                     Seleccione un módulo para cargar sus usuarios y grupos.
                   </p>
