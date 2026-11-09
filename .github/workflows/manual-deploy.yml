@@ -83,13 +83,45 @@ jobs:
           ARTIFACT_TAG: ${{ needs.find-artifact.outputs.artifact_tag }}
           SOURCE_RUN_ID: ${{ needs.find-artifact.outputs.source_run_id }}
         run: |
+          set -euo pipefail
+          artifact_dir="${{ runner.temp }}/frontend-artifact"
           archive="${{ runner.temp }}/frontend-artifact/${ARTIFACT_TAG}.tar.gz"
-          test -f "$archive"
-          tar -xzf "$archive" -C "${{ runner.temp }}/frontend-artifact"
-          metadata="${{ runner.temp }}/frontend-artifact/.vercel/deployment-metadata.json"
-          test "$(jq -r '.artifact_tag' "$metadata")" = "$ARTIFACT_TAG"
-          test "$(jq -r '.source_run_id' "$metadata")" = "$SOURCE_RUN_ID"
-          test -d "${{ runner.temp }}/frontend-artifact/.vercel/output"
+          if [[ ! -f "$archive" ]]; then
+            echo "::error::Artifact archive not found at the expected path. Downloaded files:"
+            find "$artifact_dir" -maxdepth 3 -type f -printf '%P\n' || true
+            exit 1
+          fi
+          if ! tar -tzf "$archive" > /dev/null; then
+            echo "::error::Downloaded artifact is not a readable gzip tar archive: ${ARTIFACT_TAG}.tar.gz"
+            exit 1
+          fi
+          if ! tar -xzf "$archive" -C "$artifact_dir"; then
+            echo "::error::Could not extract artifact archive: ${ARTIFACT_TAG}.tar.gz"
+            exit 1
+          fi
+          metadata="$artifact_dir/.vercel/deployment-metadata.json"
+          if [[ ! -f "$metadata" ]]; then
+            echo "::error::Artifact is missing .vercel/deployment-metadata.json. Extracted files:"
+            find "$artifact_dir" -maxdepth 4 -type f -printf '%P\n' || true
+            exit 1
+          fi
+          if ! jq -e 'type == "object" and (.artifact_tag | type == "string") and (.source_run_id | type == "string")' "$metadata" > /dev/null; then
+            echo "::error::Artifact deployment metadata is invalid JSON or missing required fields."
+            exit 1
+          fi
+          if [[ "$(jq -r '.artifact_tag' "$metadata")" != "$ARTIFACT_TAG" ]]; then
+            echo "::error::Artifact metadata tag does not match the requested tag ${ARTIFACT_TAG}."
+            exit 1
+          fi
+          if [[ "$(jq -r '.source_run_id' "$metadata")" != "$SOURCE_RUN_ID" ]]; then
+            echo "::error::Artifact metadata source run does not match the artifact's publishing run."
+            exit 1
+          fi
+          if [[ ! -d "$artifact_dir/.vercel/output" ]]; then
+            echo "::error::Artifact is missing the Vercel prebuilt directory .vercel/output."
+            find "$artifact_dir/.vercel" -maxdepth 3 -type f -printf '%P\n' || true
+            exit 1
+          fi
 
       - name: Deploy prebuilt artifact to Vercel
         working-directory: ${{ runner.temp }}/frontend-artifact
@@ -97,8 +129,21 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
+          print_sanitized_log() {
+            node -e '
+              const fs = require("node:fs");
+              const file = process.argv[1];
+              let output = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "No command output was captured.";
+              for (const name of ["VERCEL_TOKEN", "VERCEL_ORG_ID"]) {
+                const secret = process.env[name];
+                if (secret) output = output.split(secret).join("[REDACTED]");
+              }
+              console.log(output.split(/\r?\n/).slice(-100).join("\n"));
+            ' "$1"
+          }
           if ! npx --yes vercel@41.7.3 deploy --prebuilt --prod --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-deploy.log" 2>&1; then
             echo "::error::Vercel production deployment failed."
+            print_sanitized_log "$RUNNER_TEMP/vercel-deploy.log"
             exit 1
           fi
 
