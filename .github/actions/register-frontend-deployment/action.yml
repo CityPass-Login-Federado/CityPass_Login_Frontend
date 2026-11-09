@@ -1,0 +1,101 @@
+name: Register frontend deployment
+description: Records a successful frontend deployment and maintains its active tracking issue.
+inputs:
+  gh-token:
+    description: GitHub token with deployments and issues write permissions.
+    required: true
+  artifact-tag:
+    description: Immutable artifact identifier.
+    required: true
+  artifact-id:
+    description: GitHub Actions artifact ID.
+    required: true
+  source-run-id:
+    description: Workflow run that published the artifact.
+    required: true
+  metadata-path:
+    description: Path to deployment-metadata.json inside the downloaded artifact.
+    required: true
+  deployment-run-url:
+    description: Actions run URL that completed this deployment.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Register deployment and update frontend issue
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.gh-token }}
+        ARTIFACT_TAG: ${{ inputs.artifact-tag }}
+        ARTIFACT_ID: ${{ inputs.artifact-id }}
+        SOURCE_RUN_ID: ${{ inputs.source-run-id }}
+        METADATA_PATH: ${{ inputs.metadata-path }}
+        DEPLOYMENT_RUN_URL: ${{ inputs.deployment-run-url }}
+      run: |
+        set -euo pipefail
+
+        version="$(jq -r '.version' "$METADATA_PATH")"
+        metadata_tag="$(jq -r '.artifact_tag' "$METADATA_PATH")"
+        commit="$(jq -r '.commit' "$METADATA_PATH")"
+        metadata_run_id="$(jq -r '.source_run_id' "$METADATA_PATH")"
+        built_at="$(jq -r '.built_at' "$METADATA_PATH")"
+        if [[ "$metadata_tag" != "$ARTIFACT_TAG" || "$metadata_run_id" != "$SOURCE_RUN_ID" || "$ARTIFACT_TAG" != "${version}-${SOURCE_RUN_ID}" ]]; then
+          echo "::error::Downloaded artifact metadata does not match the requested artifact."
+          exit 1
+        fi
+
+        repository="$GITHUB_REPOSITORY"
+        artifact_url="${GITHUB_SERVER_URL}/${repository}/actions/runs/${SOURCE_RUN_ID}/artifacts/${ARTIFACT_ID}"
+        deployed_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+        deployment_payload="$(jq -n --arg ref "$commit" --arg description "Frontend ${ARTIFACT_TAG}" '{ref: $ref, environment: "production-frontend", production_environment: true, auto_merge: false, required_contexts: [], description: $description}')"
+        deployment_id="$(printf '%s' "$deployment_payload" | gh api --method POST "repos/${repository}/deployments" --input - --jq '.id')"
+        status_payload="$(jq -n --arg log_url "$DEPLOYMENT_RUN_URL" '{state: "success", log_url: $log_url, description: "Frontend production deployment succeeded"}')"
+        printf '%s' "$status_payload" | gh api --method POST "repos/${repository}/deployments/${deployment_id}/statuses" --input - > /dev/null
+
+        labels="$(gh api --paginate --jq '.[].name' "repos/${repository}/labels?per_page=100")"
+        ensure_label() {
+          local name="$1"
+          local color="$2"
+          local description="$3"
+          if ! grep -Fxq "$name" <<< "$labels"; then
+            gh api --method POST "repos/${repository}/labels" -f name="$name" -f color="$color" -f description="$description" > /dev/null
+            labels="${labels}"$'\n'"${name}"
+          fi
+        }
+
+        ensure_label "deployment:active" "0e8a16" "Currently deployed frontend artifact."
+        ensure_label "deployment:superseded" "cfd3d7" "Frontend artifact superseded by a later deployment."
+        ensure_label "service:frontend" "1d76db" "Deployment tracking for the frontend service."
+        ensure_label "status:pending" "fbca04" "Work has not started on this deployment issue."
+        ensure_label "status:working" "0052cc" "Work is in progress on this deployment issue."
+        ensure_label "status:bug" "d73a4a" "A problem was found in this deployment."
+
+        issue_title="Frontend deployment ${ARTIFACT_TAG}"
+        active_issues="$(gh issue list --repo "$repository" --state open --label deployment:active --label service:frontend --json number,title --limit 100)"
+        issue_number="$(jq -r --arg title "$issue_title" '[.[] | select(.title == $title) | .number][0] // empty' <<< "$active_issues")"
+        if [[ -z "$issue_number" ]]; then
+          issue_body="$(mktemp)"
+          printf '## Frontend deployment\n\n- Version/tag: `%s`\n- Artifact: [%s](%s)\n- GHCR reference: `ghcr.io/citypass-login-federado/citypass-login-frontend:%s` (registry record; Vercel deploys the prebuilt artifact above)\n- Built at (UTC): `%s`\n- Deployed at (UTC): `%s`\n- Commit: `%s`\n- Environment: `production-frontend`\n- Actions run: [deployment run](%s)\n' "$ARTIFACT_TAG" "$ARTIFACT_TAG" "$artifact_url" "$ARTIFACT_TAG" "$built_at" "$deployed_at" "$commit" "$DEPLOYMENT_RUN_URL" > "$issue_body"
+          issue_url="$(gh issue create --repo "$repository" --title "$issue_title" --body-file "$issue_body" --label deployment:active --label service:frontend --label status:pending)"
+          rm -f "$issue_body"
+          issue_number="${issue_url##*/}"
+        else
+          gh issue comment "$issue_number" --repo "$repository" --body "Artifact ${ARTIFACT_TAG} was deployed again at ${deployed_at} UTC. [Actions run](${DEPLOYMENT_RUN_URL}). The existing status label was preserved."
+          issue_url="${GITHUB_SERVER_URL}/${repository}/issues/${issue_number}"
+        fi
+
+        while IFS= read -r previous_number; do
+          [[ -z "$previous_number" || "$previous_number" == "$issue_number" ]] && continue
+          gh issue comment "$previous_number" --repo "$repository" --body "Superseded by [${ARTIFACT_TAG}](${issue_url}) at ${deployed_at} UTC."
+          gh issue edit "$previous_number" --repo "$repository" --remove-label deployment:active --remove-label status:pending --remove-label status:working --remove-label status:bug --add-label deployment:superseded
+          gh issue close "$previous_number" --repo "$repository" --reason completed
+        done < <(jq -r '.[].number' <<< "$active_issues")
+
+        {
+          echo "### Frontend deployed: ${ARTIFACT_TAG}"
+          echo "- Environment: production-frontend"
+          echo "- Commit: ${commit}"
+          echo "- Artifact: [${ARTIFACT_TAG}](${artifact_url})"
+          echo "- Tracking issue: [#${issue_number}](${issue_url})"
+          echo "- Deployed at (UTC): ${deployed_at}"
+        } >> "$GITHUB_STEP_SUMMARY"
