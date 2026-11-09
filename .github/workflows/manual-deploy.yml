@@ -1,0 +1,113 @@
+name: Manual Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      artifact_id:
+        description: Exact frontend artifact identifier, for example 1.0.0-1234567890
+        required: true
+        type: string
+
+permissions:
+  actions: read
+
+jobs:
+  find-artifact:
+    name: Validate exact artifact
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    outputs:
+      artifact_id: ${{ steps.find.outputs.artifact_id }}
+      source_run_id: ${{ steps.find.outputs.source_run_id }}
+      artifact_tag: ${{ steps.find.outputs.artifact_tag }}
+    steps:
+      - name: Validate identifier and locate artifact
+        id: find
+        env:
+          ARTIFACT_TAG: ${{ inputs.artifact_id }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ ! "$ARTIFACT_TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+-[0-9]+$ ]]; then
+            echo "::error::Artifact identifier must have the form <version>-<build_number>."
+            exit 1
+          fi
+          matches="$(gh api --paginate --jq '.artifacts[] | select(.name == env.ARTIFACT_TAG and .expired == false) | [.id, .workflow_run.id] | @tsv' "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${ARTIFACT_TAG}&per_page=100")"
+          match_count="$(printf '%s\n' "$matches" | sed '/^$/d' | wc -l | tr -d ' ')"
+          if [[ "$match_count" != "1" ]]; then
+            echo "::error::Expected exactly one unexpired artifact named ${ARTIFACT_TAG}; found ${match_count}."
+            exit 1
+          fi
+          IFS=$'\t' read -r artifact_id source_run_id <<< "$matches"
+          source_run="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${source_run_id}")"
+          source_branch="$(jq -r '.head_branch' <<< "$source_run")"
+          source_repository="$(jq -r '.head_repository.full_name // empty' <<< "$source_run")"
+          source_workflow="$(jq -r '.path' <<< "$source_run")"
+          if [[ "$source_repository" != "$GITHUB_REPOSITORY" || ( "$source_branch" != "main" && "$source_branch" != release* ) || ( "$source_workflow" != ".github/workflows/push-checks.yml" && "$source_workflow" != ".github/workflows/CD.yml" ) ]]; then
+            echo "::error::The artifact must come from an authorized frontend publication workflow on main or a release branch."
+            exit 1
+          fi
+          printf 'artifact_id=%s\nsource_run_id=%s\nartifact_tag=%s\n' "$artifact_id" "$source_run_id" "$ARTIFACT_TAG" >> "$GITHUB_OUTPUT"
+
+  deploy-production:
+    name: Deploy exact artifact to Vercel production
+    needs: find-artifact
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      deployments: write
+      issues: write
+    concurrency:
+      group: frontend-production-deploy
+      cancel-in-progress: false
+    steps:
+      - name: Checkout workflow helpers
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: "22"
+
+      - name: Download exact artifact by ID
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.find-artifact.outputs.artifact_id }}
+          run-id: ${{ needs.find-artifact.outputs.source_run_id }}
+          path: ${{ runner.temp }}/frontend-artifact
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Unpack and verify artifact metadata
+        env:
+          ARTIFACT_TAG: ${{ needs.find-artifact.outputs.artifact_tag }}
+          SOURCE_RUN_ID: ${{ needs.find-artifact.outputs.source_run_id }}
+        run: |
+          archive="${{ runner.temp }}/frontend-artifact/${ARTIFACT_TAG}.tar.gz"
+          test -f "$archive"
+          tar -xzf "$archive" -C "${{ runner.temp }}/frontend-artifact"
+          metadata="${{ runner.temp }}/frontend-artifact/.vercel/deployment-metadata.json"
+          test "$(jq -r '.artifact_tag' "$metadata")" = "$ARTIFACT_TAG"
+          test "$(jq -r '.source_run_id' "$metadata")" = "$SOURCE_RUN_ID"
+          test -d "${{ runner.temp }}/frontend-artifact/.vercel/output"
+
+      - name: Deploy prebuilt artifact to Vercel
+        working-directory: ${{ runner.temp }}/frontend-artifact
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if ! npx --yes vercel@41.7.3 deploy --prebuilt --prod --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-deploy.log" 2>&1; then
+            echo "::error::Vercel production deployment failed."
+            exit 1
+          fi
+
+      - name: Register successful deployment and artifact issue
+        uses: ./.github/actions/register-frontend-deployment
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-tag: ${{ needs.find-artifact.outputs.artifact_tag }}
+          artifact-id: ${{ needs.find-artifact.outputs.artifact_id }}
+          source-run-id: ${{ needs.find-artifact.outputs.source_run_id }}
+          metadata-path: ${{ runner.temp }}/frontend-artifact/.vercel/deployment-metadata.json
+          deployment-run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

@@ -10,12 +10,85 @@ jobs:
     if: github.ref_name == 'main' || startsWith(github.ref_name, 'release')
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
       packages: write
-
+    outputs:
+      artifact_id: ${{ steps.existing.outputs.artifact_id || steps.upload.outputs.artifact-id }}
+      artifact_url: ${{ steps.existing.outputs.artifact_url || steps.upload.outputs.artifact-url }}
+      artifact_name: ${{ steps.version.outputs.tag }}
+      source_run_id: ${{ github.run_id }}
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: "22"
+
+      - name: Derive immutable artifact identifier
+        id: version
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          printf 'tag=%s-%s\n' "$version" "$GITHUB_RUN_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Reuse artifact on workflow rerun
+        id: existing
+        env:
+          ARTIFACT_TAG: ${{ steps.version.outputs.tag }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          matches="$(gh api --paginate --jq '.artifacts[] | select(.name == env.ARTIFACT_TAG) | [.id, (.expired | tostring)] | @tsv' "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?per_page=100")"
+          match_count="$(printf '%s\n' "$matches" | sed '/^$/d' | wc -l | tr -d ' ')"
+          if [[ "$match_count" -gt 1 ]]; then
+            echo "::error::Multiple artifacts already use ${ARTIFACT_TAG} in this run."
+            exit 1
+          fi
+          if [[ "$match_count" == "1" ]]; then
+            IFS=$'\t' read -r artifact_id expired <<< "$matches"
+            if [[ "$expired" != "false" ]]; then
+              echo "::error::The immutable artifact ${ARTIFACT_TAG} has expired; start a new build instead of replacing it."
+              exit 1
+            fi
+            printf 'artifact_id=%s\nartifact_url=%s/%s/actions/runs/%s/artifacts/%s\n' "$artifact_id" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$artifact_id" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.existing.outputs.artifact_id == ''
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Build Vercel production output
+        if: steps.existing.outputs.artifact_id == ''
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          mkdir -p .vercel
+          node -e 'const fs = require("node:fs"); fs.writeFileSync(".vercel/project.json", JSON.stringify({ orgId: process.env.VERCEL_ORG_ID, projectId: process.env.VERCEL_PROJECT_ID }));'
+          if ! npx --yes vercel@41.7.3 pull --yes --environment=production --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-pull.log" 2>&1; then
+            echo "::error::Vercel project configuration could not be pulled."
+            exit 1
+          fi
+          if ! npx --yes vercel@41.7.3 build --prod --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-build.log" 2>&1; then
+            echo "::error::Vercel production build failed."
+            exit 1
+          fi
+          test -d .vercel/output
+          ARTIFACT_TAG="${{ steps.version.outputs.tag }}" node -e 'const fs = require("node:fs"); fs.writeFileSync(".vercel/deployment-metadata.json", JSON.stringify({ version: require("./package.json").version, artifact_tag: process.env.ARTIFACT_TAG, commit: process.env.GITHUB_SHA, source_run_id: process.env.GITHUB_RUN_ID, source_run_url: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`, built_at: new Date().toISOString() }, null, 2));'
+          tar -czf "$RUNNER_TEMP/${{ steps.version.outputs.tag }}.tar.gz" .vercel/output .vercel/project.json .vercel/deployment-metadata.json
+
+      - name: Publish immutable deployable artifact
+        if: steps.existing.outputs.artifact_id == ''
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.version.outputs.tag }}
+          path: ${{ runner.temp }}/${{ steps.version.outputs.tag }}.tar.gz
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
@@ -33,6 +106,7 @@ jobs:
         with:
           images: ghcr.io/citypass-login-federado/citypass-login-frontend
           tags: |
+            type=raw,value=${{ steps.version.outputs.tag }}
             type=ref,event=branch
             type=sha,format=short,prefix=
             type=raw,value=latest,enable={{is_default_branch}}
