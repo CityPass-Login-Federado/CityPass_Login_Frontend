@@ -67,12 +67,26 @@ jobs:
         run: |
           mkdir -p .vercel
           node -e 'const fs = require("node:fs"); fs.writeFileSync(".vercel/project.json", JSON.stringify({ orgId: process.env.VERCEL_ORG_ID, projectId: process.env.VERCEL_PROJECT_ID }));'
+          print_sanitized_log() {
+            node -e '
+              const fs = require("node:fs");
+              const file = process.argv[1];
+              let output = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "No command output was captured.";
+              for (const name of ["VERCEL_TOKEN", "VERCEL_ORG_ID", "VERCEL_PROJECT_ID"]) {
+                const secret = process.env[name];
+                if (secret) output = output.split(secret).join("[REDACTED]");
+              }
+              console.log(output.split(/\r?\n/).slice(-100).join("\n"));
+            ' "$1"
+          }
           if ! npx --yes vercel@41.7.3 pull --yes --environment=production --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-pull.log" 2>&1; then
             echo "::error::Vercel project configuration could not be pulled."
+            print_sanitized_log "$RUNNER_TEMP/vercel-pull.log"
             exit 1
           fi
           if ! npx --yes vercel@41.7.3 build --prod --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-build.log" 2>&1; then
             echo "::error::Vercel production build failed."
+            print_sanitized_log "$RUNNER_TEMP/vercel-build.log"
             exit 1
           fi
           test -d .vercel/output
