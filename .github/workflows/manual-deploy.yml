@@ -85,12 +85,13 @@ jobs:
         run: |
           set -euo pipefail
           artifact_dir="${{ runner.temp }}/frontend-artifact"
-          archive="${{ runner.temp }}/frontend-artifact/${ARTIFACT_TAG}.tar.gz"
-          if [[ ! -f "$archive" ]]; then
-            echo "::error::Artifact archive not found at the expected path. Downloaded files:"
+          mapfile -t archives < <(find "$artifact_dir" -type f -name "${ARTIFACT_TAG}.tar.gz" -print)
+          if [[ "${#archives[@]}" -ne 1 ]]; then
+            echo "::error::Expected one ${ARTIFACT_TAG}.tar.gz archive, found ${#archives[@]}. Downloaded files:"
             find "$artifact_dir" -maxdepth 3 -type f -printf '%P\n' || true
             exit 1
           fi
+          archive="${archives[0]}"
           if ! tar -tzf "$archive" > /dev/null; then
             echo "::error::Downloaded artifact is not a readable gzip tar archive: ${ARTIFACT_TAG}.tar.gz"
             exit 1
