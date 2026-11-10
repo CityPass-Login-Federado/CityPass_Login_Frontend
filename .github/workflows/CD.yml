@@ -77,6 +77,8 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VITE_CLIENT_ID: ${{ secrets.VITE_CLIENT_ID }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
         run: |
           mkdir -p .vercel
           node -e 'const fs = require("node:fs"); fs.writeFileSync(".vercel/project.json", JSON.stringify({ orgId: process.env.VERCEL_ORG_ID, projectId: process.env.VERCEL_PROJECT_ID }));'
@@ -85,7 +87,7 @@ jobs:
               const fs = require("node:fs");
               const file = process.argv[1];
               let output = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "No command output was captured.";
-              for (const name of ["VERCEL_TOKEN", "VERCEL_ORG_ID", "VERCEL_PROJECT_ID"]) {
+              for (const name of ["VERCEL_TOKEN", "VERCEL_ORG_ID", "VERCEL_PROJECT_ID", "VITE_CLIENT_ID", "VITE_API_BASE_URL"]) {
                 const secret = process.env[name];
                 if (secret) output = output.split(secret).join("[REDACTED]");
               }
@@ -97,6 +99,21 @@ jobs:
             print_sanitized_log "$RUNNER_TEMP/vercel-pull.log"
             exit 1
           fi
+          node <<'NODE'
+          const fs = require('node:fs');
+          const envFile = '.vercel/.env.production.local';
+          const overrides = new Map([
+            ['VITE_CLIENT_ID', process.env.VITE_CLIENT_ID],
+            ['VITE_API_BASE_URL', process.env.VITE_API_BASE_URL],
+          ]);
+          const existing = fs.existsSync(envFile) ? fs.readFileSync(envFile, 'utf8') : '';
+          const retained = existing.split(/\r?\n/).filter((line) => {
+            const key = line.match(/^\s*(?:export\s+)?([^=\s]+)\s*=/)?.[1];
+            return !overrides.has(key);
+          });
+          for (const [key, value] of overrides) retained.push(`${key}=${value}`);
+          fs.writeFileSync(envFile, `${retained.join('\n').replace(/\n+$/, '')}\n`);
+          NODE
           if ! npx --yes vercel@65.14.0 build --prod --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-build.log" 2>&1; then
             echo "::error::Vercel production build failed."
             print_sanitized_log "$RUNNER_TEMP/vercel-build.log"
