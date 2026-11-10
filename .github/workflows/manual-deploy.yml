@@ -156,7 +156,7 @@ jobs:
               console.log(output.split(/\r?\n/).slice(-100).join("\n"));
             ' "$1"
           }
-          if ! npx --yes vercel@47.2.2 deploy --prebuilt --prod --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-deploy.log" 2>&1; then
+          if ! npx --yes vercel@65.14.0 deploy --prebuilt --prod --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-deploy.log" 2>&1; then
             echo "::error::Vercel production deployment failed."
             print_sanitized_log "$RUNNER_TEMP/vercel-deploy.log"
             exit 1
