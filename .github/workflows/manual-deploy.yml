@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       artifact_id:
-        description: Exact frontend artifact identifier, for example 1.0.0-1234567890
+        description: Exact frontend artifact identifier, for example 1.0.0-123 or 1.0.0-M123
         required: true
         type: string
 
@@ -28,8 +28,8 @@ jobs:
           ARTIFACT_TAG: ${{ inputs.artifact_id }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [[ ! "$ARTIFACT_TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+-[0-9]+$ ]]; then
-            echo "::error::Artifact identifier must have the form <version>-<build_number>."
+          if [[ ! "$ARTIFACT_TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+-M?[0-9]+$ ]]; then
+            echo "::error::Artifact identifier must have the form <version>-<build_number> or <version>-M<build_number>."
             exit 1
           fi
           matches="$(gh api --paginate --jq '.artifacts[] | select(.name == env.ARTIFACT_TAG and .expired == false) | [.id, .workflow_run.id] | @tsv' "repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${ARTIFACT_TAG}&per_page=100")"
@@ -118,6 +118,19 @@ jobs:
             echo "::error::Artifact metadata source run does not match the artifact's publishing run."
             exit 1
           fi
+          source_run_number="$(jq -r '.source_run_number // empty' "$metadata")"
+          if [[ ! "$source_run_number" =~ ^[0-9]+$ ]]; then
+            echo "::error::Artifact metadata has no valid Actions run number; rebuild it with the current CD workflow."
+            exit 1
+          fi
+          expected_tag="$(jq -r '.version' "$metadata")-${source_run_number}"
+          if [[ "$(jq -r '.event_name' "$metadata")" == "workflow_dispatch" ]]; then
+            expected_tag="$(jq -r '.version' "$metadata")-M${source_run_number}"
+          fi
+          if [[ "$ARTIFACT_TAG" != "$expected_tag" ]]; then
+            echo "::error::Artifact tag does not match its version, run number, and dispatch event."
+            exit 1
+          fi
           if [[ ! -d "$artifact_dir/.vercel/output" ]]; then
             echo "::error::Artifact is missing the Vercel prebuilt directory .vercel/output."
             find "$artifact_dir/.vercel" -maxdepth 3 -type f -printf '%P\n' || true
@@ -143,7 +156,7 @@ jobs:
               console.log(output.split(/\r?\n/).slice(-100).join("\n"));
             ' "$1"
           }
-          if ! npx --yes vercel@41.7.3 deploy --prebuilt --prod --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-deploy.log" 2>&1; then
+          if ! npx --yes vercel@47.2.2 deploy --prebuilt --prod --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-deploy.log" 2>&1; then
             echo "::error::Vercel production deployment failed."
             print_sanitized_log "$RUNNER_TEMP/vercel-deploy.log"
             exit 1
