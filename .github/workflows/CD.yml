@@ -92,12 +92,12 @@ jobs:
               console.log(output.split(/\r?\n/).slice(-100).join("\n"));
             ' "$1"
           }
-          if ! npx --yes vercel@47.2.2 pull --yes --environment=production --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-pull.log" 2>&1; then
+          if ! npx --yes vercel@65.14.0 pull --yes --environment=production --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-pull.log" 2>&1; then
             echo "::error::Vercel project configuration could not be pulled."
             print_sanitized_log "$RUNNER_TEMP/vercel-pull.log"
             exit 1
           fi
-          if ! npx --yes vercel@47.2.2 build --prod --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-build.log" 2>&1; then
+          if ! npx --yes vercel@65.14.0 build --prod --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-build.log" 2>&1; then
             echo "::error::Vercel production build failed."
             print_sanitized_log "$RUNNER_TEMP/vercel-build.log"
             exit 1
