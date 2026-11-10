@@ -22,4 +22,5 @@ jobs:
     permissions:
       actions: read
       contents: read
+      issues: write
       packages: write

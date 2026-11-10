@@ -12,6 +12,7 @@ jobs:
     permissions:
       actions: read
       contents: read
+      issues: write
       packages: write
     outputs:
       artifact_id: ${{ steps.existing.outputs.artifact_id || steps.upload.outputs.artifact-id }}
@@ -31,7 +32,12 @@ jobs:
         id: version
         run: |
           version="$(node -p 'require("./package.json").version')"
-          printf 'tag=%s-%s\n' "$version" "$GITHUB_RUN_ID" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            artifact_tag="${version}-M${GITHUB_RUN_NUMBER}"
+          else
+            artifact_tag="${version}-${GITHUB_RUN_NUMBER}"
+          fi
+          printf 'tag=%s\n' "$artifact_tag" >> "$GITHUB_OUTPUT"
 
       - name: Reuse artifact on workflow rerun
         id: existing
@@ -58,6 +64,13 @@ jobs:
         if: steps.existing.outputs.artifact_id == ''
         run: npm install --ignore-scripts --no-audit --no-fund
 
+      - name: Prepare artifact tracking metadata
+        env:
+          ARTIFACT_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/frontend-tracking"
+          node -e 'const fs = require("node:fs"); fs.writeFileSync(`${process.env.RUNNER_TEMP}/frontend-tracking/deployment-metadata.json`, JSON.stringify({ version: require("./package.json").version, artifact_tag: process.env.ARTIFACT_TAG, commit: process.env.GITHUB_SHA, source_run_id: process.env.GITHUB_RUN_ID, source_run_number: process.env.GITHUB_RUN_NUMBER, event_name: process.env.GITHUB_EVENT_NAME, source_run_url: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`, built_at: new Date().toISOString() }, null, 2));'
+
       - name: Build Vercel production output
         if: steps.existing.outputs.artifact_id == ''
         env:
@@ -79,18 +92,18 @@ jobs:
               console.log(output.split(/\r?\n/).slice(-100).join("\n"));
             ' "$1"
           }
-          if ! npx --yes vercel@41.7.3 pull --yes --environment=production --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-pull.log" 2>&1; then
+          if ! npx --yes vercel@47.2.2 pull --yes --environment=production --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-pull.log" 2>&1; then
             echo "::error::Vercel project configuration could not be pulled."
             print_sanitized_log "$RUNNER_TEMP/vercel-pull.log"
             exit 1
           fi
-          if ! npx --yes vercel@41.7.3 build --prod --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-build.log" 2>&1; then
+          if ! npx --yes vercel@47.2.2 build --prod --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" > "$RUNNER_TEMP/vercel-build.log" 2>&1; then
             echo "::error::Vercel production build failed."
             print_sanitized_log "$RUNNER_TEMP/vercel-build.log"
             exit 1
           fi
           test -d .vercel/output
-          ARTIFACT_TAG="${{ steps.version.outputs.tag }}" node -e 'const fs = require("node:fs"); fs.writeFileSync(".vercel/deployment-metadata.json", JSON.stringify({ version: require("./package.json").version, artifact_tag: process.env.ARTIFACT_TAG, commit: process.env.GITHUB_SHA, source_run_id: process.env.GITHUB_RUN_ID, source_run_url: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`, built_at: new Date().toISOString() }, null, 2));'
+          cp "$RUNNER_TEMP/frontend-tracking/deployment-metadata.json" .vercel/deployment-metadata.json
           tar -czf "$RUNNER_TEMP/${{ steps.version.outputs.tag }}.tar.gz" .vercel/output .vercel/project.json .vercel/deployment-metadata.json
 
       - name: Publish immutable deployable artifact
@@ -141,3 +154,14 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Register published artifact issue
+        uses: ./.github/actions/register-frontend-deployment
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-tag: ${{ steps.version.outputs.tag }}
+          artifact-id: ${{ steps.existing.outputs.artifact_id || steps.upload.outputs.artifact-id }}
+          source-run-id: ${{ github.run_id }}
+          metadata-path: ${{ runner.temp }}/frontend-tracking/deployment-metadata.json
+          deployment-run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          register-deployment: false
