@@ -1,19 +1,43 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+
+import { type ApiError } from '../types';
 import { LoginForm } from './LoginForm';
 
 const mockMutate = vi.fn();
+const mockUseLogin = vi.fn();
+
 vi.mock('../hooks/useLogin', () => ({
-  useLogin: () => ({
-    mutate: mockMutate,
-    isPending: false,
-    isError: false,
-    error: null,
-  }),
+  useLogin: () => mockUseLogin(),
 }));
+
+const createApiError = (
+  status: number,
+  message: string,
+): AxiosError<ApiError> =>
+  new AxiosError('Request failed', undefined, undefined, undefined, {
+    data: {
+      timestamp: '2026-11-13T12:00:00Z',
+      status,
+      error: 'Request failed',
+      message,
+    },
+    status,
+    statusText: 'Request failed',
+    headers: {},
+    config: {} as InternalAxiosRequestConfig,
+  });
+
+const createLoginState = (error: AxiosError<ApiError> | null = null) => ({
+  mutate: mockMutate,
+  isPending: false,
+  isError: error !== null,
+  error,
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,6 +58,7 @@ const renderLoginForm = () => {
 describe('LoginForm Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseLogin.mockReturnValue(createLoginState());
   });
 
   afterEach(() => {
@@ -85,5 +110,49 @@ describe('LoginForm Component', () => {
         clientId: 'test-client',
       });
     });
+  });
+
+  test('muestra el error de credenciales para una respuesta 401', () => {
+    mockUseLogin.mockReturnValue(
+      createLoginState(createApiError(401, 'Mensaje inesperado del backend')),
+    );
+
+    renderLoginForm();
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Usuario o contraseña inválidos',
+    );
+  });
+
+  test.each([
+    [403, 'Acceso bloqueado por actividad inusual'],
+    [503, 'Servicio de validación temporalmente no disponible'],
+  ])(
+    'diferencia el error de seguridad HTTP %i del error de credenciales',
+    (status, expectedMessage) => {
+      mockUseLogin.mockReturnValue(
+        createLoginState(
+          createApiError(status, 'Usuario o contraseña inválidos'),
+        ),
+      );
+
+      renderLoginForm();
+
+      const alert = screen.getByRole('alert');
+      expect(alert).toHaveTextContent(expectedMessage);
+      expect(alert).not.toHaveTextContent('Usuario o contraseña inválidos');
+    },
+  );
+
+  test('muestra el mensaje general cuando el servidor no responde', () => {
+    mockUseLogin.mockReturnValue(
+      createLoginState(new AxiosError<ApiError>('Network Error')),
+    );
+
+    renderLoginForm();
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Error al iniciar sesión. Intente nuevamente.',
+    );
   });
 });

@@ -1,15 +1,15 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type AxiosError } from 'axios';
 import { Link } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLogin } from '../hooks/useLogin';
-import { loginSchema, type LoginFormValues } from '../utils/loginSchema';
-import { type ApiError, type LoginRequest } from '../types';
 import { AuthLayout } from '../layout/AuthLayout';
+import { type LoginRequest } from '../types';
+import { getLoginErrorMessage } from '../utils/apiErrors';
+import { loginSchema, type LoginFormValues } from '../utils/loginSchema';
 
 export const LoginForm = () => {
   const { mutate, isPending, isError, error } = useLogin();
@@ -35,10 +35,7 @@ export const LoginForm = () => {
     mutate(loginRequest);
   };
 
-  const apiErrorMessage = isError
-    ? (error as AxiosError<ApiError>)?.response?.data?.message ??
-      'Error al iniciar sesión. Intente nuevamente.'
-    : null;
+  const apiErrorMessage = isError ? getLoginErrorMessage(error) : null;
 
   return (
     <AuthLayout>
