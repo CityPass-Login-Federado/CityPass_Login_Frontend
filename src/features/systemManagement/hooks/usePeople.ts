@@ -9,12 +9,14 @@ import {
   createPerson,
   fetchPeople,
   setPersonDisabled,
+  unlockPerson,
   updatePerson,
 } from '../api/panelApi';
 import {
   type CreatePersonVariables,
   type PeopleListParams,
   type PersonStatusVariables,
+  type UnlockPersonVariables,
   type UpdatePersonVariables,
 } from '../types';
 import { reconcilePeopleAndGroups } from '../utils/cacheReconciliation';
@@ -56,5 +58,15 @@ export const useSetPersonStatus = () => {
     mutationFn: (variables: PersonStatusVariables) =>
       setPersonDisabled(variables),
     onSettled: () => reconcilePeopleAndGroups(queryClient),
+  });
+};
+
+export const useUnlockPerson = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (variables: UnlockPersonVariables) => unlockPerson(variables),
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: panelQueryKeys.audit() }),
   });
 };

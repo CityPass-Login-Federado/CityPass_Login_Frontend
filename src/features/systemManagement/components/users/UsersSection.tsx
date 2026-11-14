@@ -15,7 +15,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useGroups } from '../../hooks/useGroups';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useModules } from '../../hooks/useModules';
-import { usePeople, useSetPersonStatus } from '../../hooks/usePeople';
+import {
+  usePeople,
+  useSetPersonStatus,
+  useUnlockPerson,
+} from '../../hooks/usePeople';
 import {
   type NoticeHandler,
   type PanelPerson,
@@ -48,6 +52,7 @@ export const UsersSection = ({
   const [isPersonDialogOpen, setIsPersonDialogOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<PanelPerson | null>(null);
   const [statusPerson, setStatusPerson] = useState<PanelPerson | null>(null);
+  const [unlockPerson, setUnlockPerson] = useState<PanelPerson | null>(null);
   const debouncedSearch = useDebouncedValue(search);
   const modulesQuery = useModules({ enabled: isGeneralAdmin });
   const modules = useMemo(() => modulesQuery.data ?? [], [modulesQuery.data]);
@@ -75,6 +80,7 @@ export const UsersSection = ({
     isGeneralAdmin,
   });
   const statusMutation = useSetPersonStatus();
+  const unlockMutation = useUnlockPerson();
   const groupDataStatus = groupsQuery.isError
     ? 'error'
     : groupsQuery.isPending || groupsQuery.isPlaceholderData
@@ -145,6 +151,33 @@ export const UsersSection = ({
             getPanelErrorMessage(error, 'No se pudo cambiar el estado.'),
           );
           setStatusPerson(null);
+        },
+      },
+    );
+  };
+
+  const handleUnlock = () => {
+    if (!unlockPerson) return;
+
+    unlockMutation.mutate(
+      {
+        uid: unlockPerson.uid,
+        module: unlockPerson.module,
+      },
+      {
+        onSuccess: () => {
+          onNotice(
+            'success',
+            'Bloqueo temporal e intentos fallidos eliminados.',
+          );
+          setUnlockPerson(null);
+        },
+        onError: (error) => {
+          onNotice(
+            'error',
+            getPanelErrorMessage(error, 'No se pudo desbloquear la cuenta.'),
+          );
+          setUnlockPerson(null);
         },
       },
     );
@@ -233,7 +266,9 @@ export const UsersSection = ({
                 groupDataStatus={groupDataStatus}
                 isGeneralAdmin={isGeneralAdmin}
                 onEdit={handleEditPerson}
+                onUnlock={setUnlockPerson}
                 onChangeStatus={setStatusPerson}
+                isUnlockPending={unlockMutation.isPending}
               />
               <TablePagination
                 currentPage={peopleQuery.data.currentPage}
@@ -296,6 +331,37 @@ export const UsersSection = ({
                 : statusPerson?.disabled
                   ? 'Rehabilitar'
                   : 'Deshabilitar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={unlockPerson !== null}
+        onOpenChange={(open) => !open && setUnlockPerson(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Desbloquear cuenta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se eliminarán el bloqueo temporal por intentos fallidos y su
+              historial reciente para {unlockPerson?.uid}
+              {unlockPerson?.module ? ` en ${unlockPerson.module}` : ''}. Esta
+              acción no rehabilita una cuenta deshabilitada ni aprueba bloqueos
+              por anomalías.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={unlockMutation.isPending}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={unlockMutation.isPending}
+              onClick={handleUnlock}
+            >
+              {unlockMutation.isPending
+                ? 'Desbloqueando…'
+                : 'Desbloquear cuenta'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

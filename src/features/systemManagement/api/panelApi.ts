@@ -16,6 +16,7 @@ import {
   type PanelPerson,
   type PeopleListParams,
   type RemoveGroupMemberRequest,
+  type UnlockPersonVariables,
   type UpdatePersonVariables,
 } from '../types';
 import {
@@ -111,6 +112,17 @@ export const setPersonDisabled = async ({
   const action = disabled ? 'disable' : 'enable';
   await axiosInstance.post(
     `/panel/people/${encodeURIComponent(uid)}/${action}`,
+    undefined,
+    moduleConfig(module),
+  );
+};
+
+export const unlockPerson = async ({
+  uid,
+  module,
+}: UnlockPersonVariables): Promise<void> => {
+  await axiosInstance.post(
+    `/panel/people/${encodeURIComponent(uid)}/unlock`,
     undefined,
     moduleConfig(module),
   );

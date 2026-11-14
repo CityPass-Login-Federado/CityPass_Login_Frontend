@@ -9,6 +9,9 @@ import {
 describe('audit utils', () => {
   test('traduce acciones conocidas y conserva acciones futuras', () => {
     expect(getAuditActionLabel('MEMBER_ADDED')).toBe('Miembro agregado');
+    expect(getAuditActionLabel('LOGIN_LOCKOUT_CLEARED')).toBe(
+      'Cuenta desbloqueada',
+    );
     expect(getAuditActionLabel('custom_action')).toBe('custom_action');
   });
 

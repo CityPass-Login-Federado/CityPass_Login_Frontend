@@ -113,6 +113,11 @@ export interface PersonStatusVariables {
   module?: string;
 }
 
+export interface UnlockPersonVariables {
+  uid: string;
+  module?: string;
+}
+
 export interface CreateGroupRequest {
   name: string;
 }

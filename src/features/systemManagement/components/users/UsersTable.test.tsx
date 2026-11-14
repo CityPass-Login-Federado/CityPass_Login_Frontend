@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 
 import { type PanelPerson } from '../../types';
@@ -25,7 +26,9 @@ const renderTable = (
       groupDataStatus={groupDataStatus}
       isGeneralAdmin={isGeneralAdmin}
       onEdit={vi.fn()}
+      onUnlock={vi.fn()}
       onChangeStatus={vi.fn()}
+      isUnlockPending={false}
     />,
   );
 
@@ -63,5 +66,31 @@ describe('UsersTable', () => {
     });
 
     expect(disableButton.querySelector('.lucide-trash2')).toBeInTheDocument();
+  });
+
+  test('permite solicitar el desbloqueo temporal de la cuenta', async () => {
+    const user = userEvent.setup();
+    const onUnlock = vi.fn();
+    render(
+      <UsersTable
+        people={[person]}
+        groupNamesByUser={new Map()}
+        groupDataStatus="ready"
+        isGeneralAdmin={false}
+        onEdit={vi.fn()}
+        onUnlock={onUnlock}
+        onChangeStatus={vi.fn()}
+        isUnlockPending={false}
+      />,
+    );
+
+    const unlockButton = screen.getByRole('button', {
+      name: 'Desbloquear cuenta de Juan Pérez',
+    });
+    expect(unlockButton.querySelector('.lucide-lock-open')).toBeInTheDocument();
+
+    await user.click(unlockButton);
+
+    expect(onUnlock).toHaveBeenCalledWith(person);
   });
 });

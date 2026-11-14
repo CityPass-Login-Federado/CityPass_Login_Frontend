@@ -10,6 +10,7 @@ export const AUDIT_ACTION_OPTIONS = [
   { value: 'GROUP_DELETED', label: 'Grupo eliminado' },
   { value: 'MEMBER_ADDED', label: 'Miembro agregado' },
   { value: 'MEMBER_REMOVED', label: 'Miembro quitado' },
+  { value: 'LOGIN_LOCKOUT_CLEARED', label: 'Cuenta desbloqueada' },
 ] as const;
 
 const auditActionLabels = new Map<string, string>(

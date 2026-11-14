@@ -13,6 +13,7 @@ import {
   fetchPeople,
   removeUserFromGroup,
   setPersonDisabled,
+  unlockPerson,
   updatePerson,
 } from './panelApi';
 
@@ -172,6 +173,20 @@ describe('panelApi', () => {
       '/panel/people/u-1/disable',
       undefined,
       { params: { module: 'movilidad' } },
+    );
+  });
+
+  test('unlockPerson limpia el bloqueo temporal dentro del módulo', async () => {
+    const postSpy = vi
+      .spyOn(axiosInstance, 'post')
+      .mockResolvedValue({ data: undefined });
+
+    await unlockPerson({ uid: 'juan pérez', module: 'reclamos' });
+
+    expect(postSpy).toHaveBeenCalledWith(
+      '/panel/people/juan%20p%C3%A9rez/unlock',
+      undefined,
+      { params: { module: 'reclamos' } },
     );
   });
 
