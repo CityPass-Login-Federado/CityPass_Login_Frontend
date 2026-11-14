@@ -60,6 +60,27 @@ export interface GroupListParams {
   isGeneralAdmin?: boolean;
 }
 
+export interface PanelAuditEntry {
+  id: string;
+  actorSub: string;
+  actorUid: string;
+  module: string;
+  action: string;
+  target: string;
+  detail: string | null;
+  occurredAt: string;
+}
+
+export interface AuditListParams {
+  page: number;
+  size: number;
+  actor?: string;
+  action?: string;
+  from?: string;
+  to?: string;
+  module?: string;
+}
+
 export interface CreatePersonRequest {
   givenName: string;
   sn: string;

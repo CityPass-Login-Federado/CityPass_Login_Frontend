@@ -2,6 +2,7 @@ import { axiosInstance } from '@/lib/axios';
 
 import {
   type AssignUserToGroupRequest,
+  type AuditListParams,
   type BulkMembershipRequest,
   type BulkMembershipResponse,
   type CreateGroupVariables,
@@ -10,6 +11,7 @@ import {
   type GroupListParams,
   type MembershipChangeResponse,
   type PaginatedResponse,
+  type PanelAuditEntry,
   type PanelGroup,
   type PanelPerson,
   type PeopleListParams,
@@ -33,6 +35,16 @@ const moduleConfig = (module?: string) =>
 
 export const fetchModules = async (): Promise<string[]> => {
   const response = await axiosInstance.get<string[]>('/panel/modules');
+  return response.data;
+};
+
+export const fetchAuditEntries = async (
+  params: AuditListParams,
+): Promise<PaginatedResponse<PanelAuditEntry>> => {
+  const response = await axiosInstance.get<PaginatedResponse<PanelAuditEntry>>(
+    '/panel/audit',
+    { params: withoutEmptyParams(params) },
+  );
   return response.data;
 };
 

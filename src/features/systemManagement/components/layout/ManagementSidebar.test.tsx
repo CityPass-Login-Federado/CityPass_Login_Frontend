@@ -32,4 +32,17 @@ describe('ManagementSidebar', () => {
     expect(groupLinks[0]).toHaveAttribute('href', '/panel/groups');
     expect(groupLinks[0]).toHaveAttribute('aria-current', 'page');
   });
+
+  test('navega a la página de auditoría y mantiene su opción activa', () => {
+    render(
+      <MemoryRouter initialEntries={['/panel/audit']}>
+        <ManagementSidebar />
+      </MemoryRouter>,
+    );
+
+    const auditLinks = screen.getAllByRole('link', { name: 'Auditoría' });
+    expect(auditLinks).toHaveLength(2);
+    expect(auditLinks[0]).toHaveAttribute('href', '/panel/audit');
+    expect(auditLinks[0]).toHaveAttribute('aria-current', 'page');
+  });
 });
