@@ -1,144 +1,132 @@
-# Guía de Desarrollo: Cómo crear una nueva pantalla (Feature)
+# Guía para agregar una pantalla o caso de uso
 
-Esta guía detalla el flujo de trabajo estándar para agregar nuevas pantallas e integraciones en el Frontend de CityPass+ bajo nuestra arquitectura **Feature-Driven**.
+Esta guía describe el flujo real del repositorio. No presupone que un endpoint existe: antes de programar una integración se debe comprobar el contrato backend.
 
-## Paso 1: Identificar el Dominio (Feature)
-Antes de crear un componente visual, debemos determinar a qué módulo de negocio pertenece la pantalla. 
-* Si corresponde al **login, sesión o contraseñas**, pertenece a `auth`.
-* Si corresponde a la **administración de usuarios o grupos**, pertenece a `systemManagement` y a su subdominio `users` o `groups`.
+## 1. Confirmar el contrato
 
-Solo se crea una nueva carpeta dentro de `src/features/` cuando aparece un dominio de negocio distinto. Una pantalla nueva de usuarios o grupos no crea una feature adicional.
+1. Verificar método, ruta, request, response y errores en el OpenAPI o controller real.
+2. Comprobar autorización y claims necesarios.
+3. Acordar paginación, filtros y nombres antes de escribir el cliente.
+4. Añadir una prueba de contrato o, como mínimo, un test del cliente HTTP.
 
-## Paso 2: Crear la estructura interna
-Toda feature nueva debe respetar la siguiente estructura de carpetas interna:
+Esta verificación es obligatoria porque actualmente hay divergencias conocidas:
+
+| Frontend actual | Backend actual |
+|---|---|
+| `/panel/people` | `/panel/personas` |
+| `/panel/groups` | `/panel/grupos` |
+| `/members` | `/miembros` |
+| módulos, administración global y bulk | sin endpoint |
+| forgot/reset/change password | sin endpoint |
+
+No se debe copiar una ruta ilustrativa ni crear una interfaz imaginaria para “completar” una pantalla.
+
+## 2. Elegir la feature
+
+- Login, sesión, JWT o contraseñas: `src/features/auth/`.
+- Personas, grupos o membresías: `src/features/systemManagement/`.
+- Cree otra carpeta en `src/features/` solo para un dominio nuevo.
+
+Las subcarpetas se agregan por necesidad. La estructura real es:
 
 ```text
-src/features/nombre-feature/
-├── api/          # Funciones que usan Axios para llamar al backend
-├── components/   # Componentes propios, agrupados por subdominio si hace falta
-├── hooks/        # Custom hooks (ej. mutaciones de React Query)
-├── pages/        # Componentes asociados a rutas
-├── store/        # Estado global local de la feature (opcional)
-├── types/        # Interfaces y DTOs (Request/Response)
-└── utils/        # Funciones auxiliares puras
+auth/
+├── api/ forms/ hooks/ layout/ pages/
+├── routing/ session/ store/ types/ utils/
+
+systemManagement/
+├── api/ components/ hooks/ pages/
+├── schemas/ types/ utils/
 ```
 
-No todas las features deben tener todas las carpetas. Se agregan solamente cuando representan una responsabilidad real; por ejemplo, `systemManagement/components/` se divide en `users`, `groups`, `shared` y `layout`.
+## 3. Modelar tipos y validación
 
-## Paso 3: Definir los Contratos (Types)
-Para cumplir con los 10 puntos de "Integración y APIs", nos basamos estrictamente en el contrato OpenAPI/Swagger del backend. 
-Ve a `src/features/nombre-feature/types/index.ts` y define las interfaces.
+- Declare request, response y variables de mutación en `types/`.
+- Respete exactamente camelCase/snake_case y nulabilidad del contrato.
+- Use Zod para datos ingresados por el usuario.
+- No reutilice el tipo visual si la respuesta HTTP tiene otra forma: normalícela en `api/` o `utils/`.
 
-**Ejemplo para "Alta de usuarios Admin":**
+Ejemplo basado en el patrón real:
+
 ```typescript
-// src/features/systemManagement/types/index.ts
-export interface CreateAdminRequest {
+export interface CreatePersonRequest {
+  givenName: string;
+  sn: string;
   username: string;
   email: string;
-  role: string;
-}
-
-export interface UserResponse {
-  id: string;
-  username: string;
-  email: string;
-  createdAt: string;
+  temporaryPassword: string;
 }
 ```
 
-## Paso 4: Capa de Acceso a Datos (API y Hooks)
-Separamos la llamada HTTP de la lógica de React para abstraer el manejo asincrónico.
+## 4. Implementar acceso HTTP
 
-**1. Crear la llamada Axios (`api/`)**
+Las llamadas viven en `api/`, nunca dentro de componentes:
+
 ```typescript
-// src/features/systemManagement/api/createUser.ts
-import { axiosInstance } from '@/lib/axios';
-import { CreateAdminRequest, UserResponse } from '../types';
-
-export const createAdminUser = async (data: CreateAdminRequest): Promise<UserResponse> => {
-  const response = await axiosInstance.post('/admin/users', data);
+export const createPerson = async (
+  variables: CreatePersonVariables,
+): Promise<PanelPerson> => {
+  const response = await axiosInstance.post<PanelPerson>(
+    '/ruta-acordada-en-el-contrato',
+    variables.data,
+  );
   return response.data;
 };
 ```
 
-**2. Crear el Hook con React Query (`hooks/`)**
-```typescript
-// src/features/systemManagement/hooks/useCreateUser.ts
-import { useMutation } from '@tanstack/react-query';
-import { createAdminUser } from '../api/createUser';
+Use `axiosInstance` para endpoints protegidos. `authAxiosInstance` queda reservado al refresh para evitar ciclos de interceptores.
 
-export const useCreateUser = () => {
-  return useMutation({
-    mutationFn: createAdminUser,
-    onSuccess: () => {
-      // Mostrar notificación de éxito, invalidar queries, etc.
-    },
-  });
-};
+## 5. Crear query o mutación
+
+- Use TanStack Query para datos remotos.
+- Defina claves en `systemManagement/utils/queryKeys.ts` cuando corresponda.
+- Centralice invalidación/reconciliación en `cacheReconciliation.ts`.
+- No duplique respuestas remotas en Zustand; el store actual se limita a la sesión.
+
+## 6. Construir la interfaz
+
+- Componentes de negocio dentro de su feature.
+- Primitivas visuales sin conocimiento del dominio en `src/components/ui/`.
+- React Hook Form + Zod para formularios.
+- Estados visibles de carga, vacío, error y éxito.
+- Etiquetas, roles accesibles, foco y navegación por teclado.
+
+## 7. Registrar la ruta
+
+Las rutas viven en `src/App.tsx`:
+
+- Pública: ruta directa.
+- Solo autenticada: debajo de `AuthenticatedRoute`.
+- Panel administrativo: debajo de `ProtectedRoute`.
+
+La protección del frontend mejora la navegación, pero el backend debe volver a autorizar cada request.
+
+## 8. Escribir pruebas
+
+Coloque `.test.ts` o `.test.tsx` junto al código. Según el cambio, cubra:
+
+- esquema/utilidad como función pura;
+- cliente HTTP con método, ruta y payload exactos;
+- hook con `QueryClientProvider` aislado;
+- componente por comportamiento y roles accesibles;
+- routing con sesiones permitidas y rechazadas;
+- invalidación de todas las cachés afectadas.
+
+## 9. Validar antes del commit
+
+```bash
+npm run lint
+npm run typecheck
+npm run test:coverage
+npm run build
 ```
 
-## Paso 5: Maquetar la Interfaz (Componentes)
-Diseñamos la pantalla usando **Tailwind CSS** y componentes de **Shadcn UI** ubicados en `src/components/ui/` para asegurar los 10 puntos correspondientes a la dimensión de "UX/UI del Módulo".
+Checklist:
 
-```tsx
-// src/features/systemManagement/components/users/CreateAdminForm.tsx
-import { useCreateUser } from '../../hooks/useCreateUser';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-
-export const CreateAdminForm = () => {
-  const { mutate, isPending } = useCreateUser();
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // mutar enviando los datos del form...
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-4 border rounded-md">
-      <h2 className="text-xl font-bold">Alta de Usuario Admin</h2>
-      <Input name="username" placeholder="Nombre de usuario" required/>
-      <Input name="email" placeholder="Correo electrónico" required type="email"/>
-      <Button disabled={isPending} type="submit">
-        {isPending ? 'Creando...' : 'Crear Usuario'}
-      </Button>
-    </form>
-  );
-};
-```
-
-## Paso 6: Registrar la Ruta
-Para que la pantalla sea accesible, agrégala al mapa de rutas en `src/App.tsx`.
-
-* Si es una pantalla administrativa, debe quedar dentro de `ProtectedRoute`. La autorización definitiva de cada operación continúa siendo responsabilidad del backend.
-
-## Paso 7: Escribir los Tests (Crucial)
-La rúbrica exige un 60% de cobertura de pruebas automatizadas (unitarias e integrales). Por cada componente visual o hook complejo, crea un archivo `.test.tsx` junto al archivo original.
-
-```tsx
-// src/features/systemManagement/components/users/CreateAdminForm.test.tsx
-import { render, screen } from '@testing-library/react';
-import { CreateAdminForm } from './CreateAdminForm';
-import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
-
-const queryClient = new QueryClient();
-
-test('renderiza el formulario de alta correctamente', () => {
-  render(
-    <QueryClientProvider client={queryClient}>
-      <CreateAdminForm/>
-    </QueryClientProvider>
-  );
-  
-  expect(screen.getByText(/Alta de Usuario Admin/i)).toBeInTheDocument();
-  expect(screen.getByPlaceholderText(/Nombre de usuario/i)).toBeInTheDocument();
-});
-```
-
----
-**Checklist antes del Commit:**
-- [ ] ¿Los Types coinciden con el OpenAPI/Swagger?
-- [ ] ¿Se utilizó React Query para mutaciones/peticiones?
-- [ ] ¿Los componentes usan las clases de Tailwind y base de Shadcn?
-- [ ] ¿Se escribió el `.test.tsx` garantizando subir la cobertura?
-- [ ] ¿La ruta está correctamente protegida (si aplica)?
+- [ ] El endpoint existe y coincide con backend/OpenAPI.
+- [ ] No se inventaron campos ni permisos.
+- [ ] API, hook, query key e invalidación están separados.
+- [ ] La UI cubre loading, empty, error y success.
+- [ ] La autorización existe también en backend.
+- [ ] Los tests cubren contrato y comportamiento.
+- [ ] La cobertura global conserva el umbral de 60 %.

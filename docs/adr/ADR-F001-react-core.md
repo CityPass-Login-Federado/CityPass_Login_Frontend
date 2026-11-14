@@ -1,9 +1,11 @@
 # ADR-F001: React 18 como librería principal de interfaz de usuario
 
-## Estado: Aceptado
+## Estado
+
+Accepted — revisado el 14 de noviembre de 2026.
 
 ## Contexto
-El módulo de Login Federado es la puerta de entrada a la plataforma CityPass+. El frontend debe resolver los flujos de autenticación y recuperación de contraseña, además de las pantallas protegidas para la gestión de usuarios y grupos.
+El módulo de Login Federado es la puerta de entrada a la plataforma CityPass+. El frontend implementa autenticación, pantallas de contraseña y un panel protegido. Las pantallas de contraseña y parte del panel todavía no tienen un contrato backend compatible, por lo que su presencia en React no implica integración end-to-end.
 
 Necesitamos una Single Page Application (SPA) mantenible, con una experiencia de usuario fluida y un ecosistema que permita integrar enrutamiento, consumo de APIs, estado cliente y estado de servidor.
 
@@ -33,4 +35,6 @@ Elegimos React por su modelo de componentes funcionales, su ecosistema y la expe
 - La interfaz se implementa con componentes funcionales y Hooks.
 - El enrutamiento del lado del cliente se resuelve con React Router.
 - Axios se utiliza como cliente HTTP, TanStack Query para el estado de servidor y Zustand para el estado compartido de la sesión.
+- Los tokens viven solo en memoria mediante `tokenVault`; una recarga completa exige autenticarse otra vez.
+- `AuthenticatedRoute` protege `/home` y `ProtectedRoute` exige permisos adicionales para `/panel/**`.
 - Las actualizaciones mayores de React y de las librerías que integran su ecosistema deben evaluarse explícitamente para evitar incompatibilidades.

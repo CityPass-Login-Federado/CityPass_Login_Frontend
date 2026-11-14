@@ -1,6 +1,8 @@
 # ADR-F004: Arquitectura Feature-Driven para el frontend
 
-## Estado: Aceptado
+## Estado
+
+Accepted — revisado el 14 de noviembre de 2026.
 
 ## Contexto
 El frontend reúne dos dominios principales: autenticación (`auth`) y administración de usuarios y grupos (`systemManagement`). Cada dominio contiene componentes, acceso a APIs, hooks, esquemas, tipos y utilidades que evolucionan de manera relacionada.
@@ -32,7 +34,8 @@ Esta decisión no implica que las features sean micro-frontends independientes. 
 
 ## Consecuencias
 - El código de negocio se organizará dentro de `src/features/`.
-- Cada feature puede organizarse internamente en carpetas como `components`, `api`, `hooks`, `schemas`, `session`, `store`, `types` y `utils`, utilizando solamente las que necesite.
+- `auth` usa `api`, `forms`, `hooks`, `layout`, `pages`, `routing`, `session`, `store`, `types` y `utils`.
+- `systemManagement` usa `api`, `components`, `hooks`, `pages`, `schemas`, `types` y `utils`.
 - Los componentes visuales reutilizables viven en `src/components/ui/` y la infraestructura compartida, como Axios y TanStack Query, en `src/lib/`.
 - Los tests unitarios y de componentes con Vitest se ubican junto al archivo o área que prueban.
 - Zustand se limita al estado compartido de la sesión, mientras que TanStack Query administra el estado obtenido del servidor.

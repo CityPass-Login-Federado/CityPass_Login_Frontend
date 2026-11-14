@@ -1,6 +1,8 @@
 # ADR-F003: Tailwind CSS y shadcn/ui para el sistema de diseño
 
-## Estado: Aceptado
+## Estado
+
+Accepted — revisado el 14 de noviembre de 2026.
 
 ## Contexto
 La aplicación incluye flujos públicos de autenticación y pantallas protegidas de gestión. Todas ellas necesitan una interfaz consistente, responsiva y mantenible, con componentes reutilizables y una base adecuada para implementar accesibilidad sin duplicar estilos.
@@ -29,10 +31,11 @@ La aplicación incluye flujos públicos de autenticación y pantallas protegidas
 ## Decisión
 **Opción C: Tailwind CSS + shadcn/ui**
 
-Elegimos este stack para mantener una identidad visual consistente sin depender de una librería de componentes con estilos cerrados. Los componentes de shadcn/ui se incorporan al repositorio y pueden adaptarse a las necesidades del producto, mientras que Tailwind permite aplicar el sistema visual de manera uniforme en los flujos de autenticación y administración.
+Elegimos Tailwind CSS 3.4 y componentes locales basados en shadcn/ui/Radix para mantener una identidad visual consistente sin depender de estilos cerrados. Los componentes se incorporan al repositorio y pueden adaptarse a los flujos de autenticación y administración.
 
 ## Consecuencias
 - Los estilos de las pantallas se expresan principalmente mediante clases utilitarias de Tailwind.
 - Los tokens globales del tema y los estilos base se mantienen en `src/index.css` y `tailwind.config.js`.
 - Los componentes reutilizables de interfaz viven en `src/components/ui/` y forman parte del código mantenido por el equipo.
+- `AppErrorBoundary` y `sonner` resuelven errores inesperados y notificaciones del panel; no reemplazan los estados de error de cada sección.
 - El uso de primitivas accesibles no reemplaza la validación de etiquetas, navegación por teclado, foco, contraste y mensajes de error en cada flujo.

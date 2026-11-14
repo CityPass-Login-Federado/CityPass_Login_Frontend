@@ -1,307 +1,146 @@
 # CityPass+ — Login Federado Frontend
 
-Frontend del módulo de identidad y administración de accesos de **CityPass+**, la Plataforma de Servicios Urbanos Inteligentes.
+Aplicación web del Squad 2 para autenticación y administración de identidades de CityPass+. Implementa login, custodia de tokens en memoria, renovación automática y una interfaz de gestión de personas, grupos y membresías.
 
-[![React](https://img.shields.io/badge/React-18.3-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.4-646CFF.svg?logo=vite&logoColor=white)](https://vite.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![Docker](https://img.shields.io/badge/Docker-Nginx-2496ED.svg?logo=docker&logoColor=white)](https://www.docker.com/)
-[![UADE](https://img.shields.io/badge/UADE-Desarrollo_de_Aplicaciones_II-004d99.svg)](https://www.uade.edu.ar/)
+> Estado auditado: 14 de noviembre de 2026. Las pantallas y clientes HTTP se describen tal como están en el código; la compatibilidad incompleta con el backend se detalla abajo.
 
-## Descripción
+## Stack exacto
 
-Este proyecto implementa la interfaz web del módulo de Login Federado. Consume una API integrada con OpenLDAP, administra sesiones mediante JWT y proporciona un panel protegido para gestionar usuarios, grupos y membresías.
-
-Forma parte de la materia **Desarrollo de Aplicaciones II — segundo cuatrimestre de 2026**, dictada por el profesor Andrés Sacco en la Universidad Argentina de la Empresa.
-
-[Prototipo de interfaz en Figma](https://www.figma.com/design/m2LnV4pIoZDh4wD1dfWCyU/Login---Dapis-2?node-id=3-2&t=HCMyf8hR4Mjeap7I-1)
-
-## Funcionalidades
-
-### Autenticación y cuenta
-
-- Inicio y cierre de sesión.
-- Access token y refresh token mantenidos únicamente en memoria.
-- Inyección automática del access token en solicitudes protegidas.
-- Renovación preventiva del token y reintento único ante respuestas `401`.
-- Recuperación de contraseña mediante enlace.
-- Restablecimiento y cambio de contraseña.
-- Limpieza de sesión y caché al cerrar sesión o cambiar la contraseña.
-- Rutas protegidas según el alcance y los grupos informados por el JWT.
-
-### Administración de usuarios
-
-- Listado paginado con búsqueda y filtros por estado, grupo y módulo.
-- Alta y modificación de usuarios.
-- Deshabilitación y rehabilitación de identidades.
-- Visualización de los grupos asociados a cada usuario.
-- Vistas diferenciadas para administradores generales y administradores de módulo.
-
-### Administración de grupos
-
-- Listado paginado con búsqueda y filtros por tipo y módulo.
-- Creación de grupos.
-- Consulta de miembros y remoción individual de membresías.
-- Asignación masiva de múltiples usuarios a múltiples grupos.
-- Resumen de asignaciones exitosas, omitidas, fallidas y advertencias.
-
-### Experiencia de usuario
-
-- Interfaz responsiva construida con Tailwind CSS y shadcn/ui.
-- Formularios tipados con React Hook Form y Zod.
-- Estados de carga, vacío y error.
-- Notificaciones globales y límites de error para el panel.
-- Componentes basados en primitivas accesibles de Radix UI.
-
-## Stack tecnológico
-
-| Área | Tecnologías |
+| Área | Versión declarada |
 |---|---|
-| Interfaz | React 18, TypeScript 5, React Router 7 |
-| Build | Vite 5 |
-| Estilos | Tailwind CSS 3, shadcn/ui, Radix UI |
-| Formularios | React Hook Form, Zod |
-| Datos remotos | Axios, TanStack Query |
-| Estado cliente | Zustand |
-| Pruebas | Vitest, React Testing Library, jsdom, cobertura V8 |
-| Calidad | ESLint, SonarCloud |
-| Seguridad del pipeline | Gitleaks, Trivy |
-| Infraestructura | Docker, Nginx, GitHub Actions, GHCR, Vercel |
+| Runtime de build | Node.js 22 (`node:22-alpine`) |
+| React / React DOM | 18.3.1 |
+| TypeScript | 5.6.x |
+| Vite | 5.4.x |
+| React Router | 7.1.x |
+| TanStack Query | 5.62.x |
+| Zustand | 5.0.x |
+| Axios | 1.7.x |
+| React Hook Form / Zod | 7.54.x / 3.24.x |
+| Tailwind CSS | 3.4.x |
+| Vitest / Testing Library | 2.1.x / React 16.1.x |
+| Runtime OCI | Nginx 1.27 Alpine, usuario no root |
 
-## Requisitos
+Los rangos provienen de `package.json`; no existe `package-lock.json`, de modo que una instalación nueva no fija versiones transitivas exactas.
 
-- **Node.js 22** y npm para desarrollo local.
-- Una instancia accesible del backend de Login Federado.
-- Docker Desktop o Docker Engine con Compose, solamente si se utilizará el contenedor.
+## Inicio local
 
-## Configuración local
-
-### 1. Instalar dependencias
-
-Desde la raíz del repositorio:
+Requisitos: Node.js 22, npm y backend accesible en `http://127.0.0.1:8081`.
 
 ```bash
 npm install
 ```
 
-### 2. Configurar las variables de entorno
-
-Crear un archivo `.env` en la raíz:
+Cree `.env`:
 
 ```dotenv
 VITE_API_BASE_URL=/api
-VITE_CLIENT_ID=<client-id-configurado-en-el-backend>
+VITE_CLIENT_ID=citypass-admin-web
 ```
-
-| Variable | Requerida | Descripción |
-|---|---:|---|
-| `VITE_API_BASE_URL` | Sí | URL base de la API. Con `/api`, Vite utiliza el proxy local hacia `http://127.0.0.1:8081`. |
-| `VITE_CLIENT_ID` | Sí | Identificador de cliente enviado durante el login. Debe coincidir con el valor aceptado por el backend. |
-
-Las variables prefijadas con `VITE_` quedan incluidas en el JavaScript entregado al navegador. No deben contener contraseñas, tokens ni otros secretos.
-
-### 3. Iniciar el frontend
 
 ```bash
 npm run dev
 ```
 
-La aplicación queda disponible en [http://localhost:5173](http://localhost:5173).
+Abra `http://localhost:5173`. El proxy de Vite elimina `/api` y reenvía a `http://127.0.0.1:8081`.
 
-El proxy de desarrollo espera el backend en `http://127.0.0.1:8081`. Para usar otra dirección, se debe actualizar `server.proxy` en `vite.config.ts` o configurar `VITE_API_BASE_URL` con una URL absoluta permitida por CORS.
+### Docker
 
-## Scripts disponibles
+```bash
+docker compose up -d --build
+docker compose ps
+```
 
-| Comando | Descripción |
+El host publica `5173` y Nginx escucha en `8080` dentro del contenedor. `FRONTEND_PORT` permite cambiar el puerto host. `VITE_API_BASE_URL` es una variable de build: hay que reconstruir la imagen para cambiarla.
+
+## Scripts
+
+| Comando | Propósito |
 |---|---|
-| `npm run dev` | Inicia el servidor de desarrollo con HMR. |
-| `npm run build` | Ejecuta TypeScript y genera el bundle de producción en `dist/`. |
-| `npm run preview` | Sirve localmente el bundle generado. |
-| `npm run lint` | Analiza el proyecto con ESLint. |
-| `npm run typecheck` | Verifica tipos sin generar una salida nueva. |
-| `npm test` | Ejecuta toda la suite una vez. |
-| `npm run test:watch` | Ejecuta Vitest en modo interactivo. |
-| `npm run test:coverage` | Ejecuta las pruebas y genera reportes de cobertura. |
+| `npm run dev` | Vite con HMR |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript sin emisión |
+| `npm test` | suite Vitest una vez |
+| `npm run test:watch` | Vitest interactivo |
+| `npm run test:coverage` | cobertura V8, umbral 60 % en las cuatro métricas |
+| `npm run build` | typecheck y bundle de producción |
+| `npm run preview` | preview del bundle |
 
-## Rutas de la aplicación
-
-| Ruta | Acceso | Descripción |
-|---|---|---|
-| `/login` | Público | Inicio de sesión. |
-| `/forgot-password` | Público | Solicitud de recuperación de contraseña. |
-| `/reset-password` | Público o autenticado | Restablecimiento mediante token o cambio desde el menú del usuario. |
-| `/unauthorized` | Público | Informa que la sesión no posee permisos para el panel. |
-| `/panel` | Protegido | Vista consolidada de usuarios, grupos y asignaciones. |
-| `/panel/users` | Protegido | Administración de usuarios. |
-| `/panel/groups` | Protegido | Administración de grupos y membresías. |
-
-Una ruta protegida permite el acceso a:
-
-- administradores con alcance general; o
-- usuarios de módulo que tengan un módulo asignado y pertenezcan al grupo `delegados`.
-
-El control del frontend organiza la navegación, pero la autorización definitiva de cada operación corresponde siempre al backend.
-
-## Arquitectura
-
-El proyecto utiliza una organización **Feature-Driven**: cada dominio mantiene juntos sus componentes, hooks, llamadas HTTP, tipos, esquemas y utilidades.
-
-```text
-src/
-├── assets/                       # Recursos gráficos
-├── components/
-│   ├── ui/                       # Componentes visuales compartidos
-│   └── AppErrorBoundary.tsx
-├── features/
-│   ├── auth/
-│   │   ├── api/                  # Login, logout y contraseñas
-│   │   ├── forms/                # Formularios de acceso y contraseñas
-│   │   ├── hooks/                # Mutaciones de autenticación
-│   │   ├── layout/               # Layout público y menú de sesión
-│   │   ├── pages/                # Pantallas asociadas a rutas
-│   │   ├── routing/              # Guards de rutas públicas y protegidas
-│   │   ├── session/              # Custodia de tokens en memoria
-│   │   ├── store/                # Sesión compartida con Zustand
-│   │   ├── types/
-│   │   └── utils/                # JWT, validaciones y errores
-│   └── systemManagement/
-│       ├── api/                  # Endpoints del panel
-│       ├── components/
-│       │   ├── groups/           # Gestión y asignación de grupos
-│       │   ├── layout/           # Estructura y navegación del panel
-│       │   ├── shared/           # Paginación y estados reutilizables
-│       │   └── users/            # Gestión de usuarios
-│       ├── hooks/                # Queries y mutaciones
-│       ├── pages/                # Pantallas asociadas a rutas del panel
-│       ├── schemas/              # Validaciones Zod
-│       ├── types/
-│       └── utils/                # Caché, filtros, módulos y paginación
-├── lib/
-│   ├── axios.ts                  # Cliente HTTP, refresh e interceptores
-│   ├── queryClient.ts            # Configuración de TanStack Query
-│   └── utils.ts
-├── tests/setup.ts
-├── App.tsx                       # Providers y rutas
-├── index.css
-└── main.tsx
-```
-
-### Flujo de autenticación
-
-```text
-LoginForm
-  → useLogin
-  → POST /auth/login
-  → establishSession
-  → tokenVault + useAuthStore
-  → ProtectedRoute
-  → panel
-```
-
-Los tokens viven solamente en memoria. Por diseño, recargar o cerrar la pestaña elimina la sesión y requiere autenticarse nuevamente.
-
-### Flujo de datos del panel
-
-```text
-Componente
-  → hook de TanStack Query
-  → función de API
-  → instancia de Axios
-  → backend
-  → caché e interfaz
-```
-
-Las mutaciones invalidan las consultas relacionadas mediante claves centralizadas. Los cambios de membresías reconcilian tanto usuarios como grupos para evitar información desactualizada.
-
-La explicación detallada de responsabilidades, flujos y ubicación de archivos está en la [guía de arquitectura](docs/guides/frontend-architecture.md).
-
-## Pruebas y calidad
-
-Los archivos de prueba se encuentran junto al código que verifican y utilizan los sufijos `.test.ts` o `.test.tsx`.
-
-La configuración exige un mínimo de **60 %** para statements, branches, functions y lines. Para ejecutar la validación completa:
+Validación recomendada:
 
 ```bash
 npm run lint
 npm run typecheck
 npm run test:coverage
 npm run build
+docker compose up -d --build --wait
 ```
 
-Los reportes HTML de cobertura se generan en `coverage/`.
+## Arquitectura y seguridad del cliente
 
-## Docker
+La organización es Feature-Driven:
 
-La imagen utiliza un build multi-stage:
-
-1. Node.js 22 compila la aplicación.
-2. Nginx 1.27 sirve los archivos estáticos como usuario sin privilegios en el puerto `8080`.
-
-Para construir e iniciar el frontend:
-
-```bash
-docker compose up -d --build
+```text
+src/
+├── components/ui/              # primitivas visuales compartidas
+├── features/auth/              # login, refresh, logout, JWT y guards
+├── features/systemManagement/  # personas, grupos y membresías
+├── lib/axios.ts                # interceptores y coordinación de refresh
+└── App.tsx                     # rutas y providers
 ```
 
-La aplicación queda disponible en [http://localhost:5173](http://localhost:5173). Por defecto, el contenedor espera encontrar el backend en `http://host.docker.internal:8081`.
+- Access y refresh token se guardan únicamente en memoria; recargar la página obliga a iniciar sesión otra vez.
+- El cliente renueva 30 segundos antes del vencimiento y usa una única promesa de refresh para solicitudes concurrentes.
+- Un `401` protegido produce un solo refresh y reintento.
+- El frontend decodifica claims para navegación, pero no verifica la firma: el backend sigue siendo la frontera de autorización.
+- El panel exige `aud=citypass-admin-api`, `token_use=human`, `ver=1` y grupo `delegados`, salvo los roles de administrador general reconocidos solo por la UI.
 
-Comandos útiles:
+## Rutas de UI
 
-```bash
-docker compose ps
-docker compose logs -f frontend
-docker compose down
-```
+| Ruta | Estado |
+|---|---|
+| `/login` | operativa contra `POST /auth/login` |
+| `/home` | área autenticada básica |
+| `/panel`, `/panel/users`, `/panel/groups` | UI implementada; integración backend incompatible en varias rutas |
+| `/forgot-password`, `/reset-password` | UI implementada; endpoints backend ausentes |
+| `/unauthorized` | feedback de autorización |
 
-`VITE_API_BASE_URL` y `VITE_CLIENT_ID` son variables de compilación. Después de modificarlas se debe reconstruir la imagen; definirlas únicamente en un contenedor ya creado no cambia el bundle existente.
+## Contrato con el backend: estado auditado
 
-## Despliegue
+La autenticación coincide en `POST /auth/login`, `POST /auth/refresh` y `POST /auth/logout`, incluidos los campos camelCase de request y snake_case de response.
 
-### Contenedor y GHCR
+El panel no es interoperable en el estado actual:
 
-GitHub Actions construye la imagen OCI y la publica en GitHub Container Registry con etiquetas de rama y commit. La rama principal también publica la etiqueta `latest`.
+| Frontend solicita | Backend publica | Estado |
+|---|---|---|
+| `/panel/people` | `/panel/personas` | incompatible |
+| `/panel/groups` | `/panel/grupos` | incompatible |
+| `/members` | `/miembros` | incompatible |
+| `/panel/modules` | — | ausente |
+| `/panel/admin/people`, `/panel/admin/groups` | — | ausente |
+| `/panel/group-memberships/bulk` | — | ausente |
+| `/auth/forgot-password`, `/auth/reset-password`, `/me/change-password` | — | ausentes |
 
-### Vercel
+Además, el frontend admite filtros, paginación y parámetro `module`; el backend devuelve listas completas y deriva el módulo exclusivamente del JWT. Hasta unificar el contrato, solo debe considerarse integrada la autenticación.
 
-El repositorio incluye `vercel.json` con el fallback necesario para que las rutas de React Router funcionen al accederlas directamente. En Vercel deben configurarse `VITE_API_BASE_URL` y `VITE_CLIENT_ID` antes del build.
+## CI/CD
 
-## Integración y entrega continua
+- `pr-checks.yml`: CI y smoke test Docker Compose en PRs a `main` y `develop`.
+- `CI.yml`: lint, cobertura, build, SonarCloud, Gitleaks y Trivy.
+- `push-checks.yml`: CI seguido de CD en pushes a `main` y `develop`.
+- `CD.yml`: artefacto inmutable de Vercel e imagen publicada en GHCR.
+- `manual-deploy.yml`: despliegue a Vercel de un artefacto previamente validado.
 
-Los workflows ubicados en `.github/workflows/` ejecutan:
+El smoke test comprueba que Nginx sirve HTML; no prueba login ni compatibilidad con el backend.
 
-- lint, pruebas con cobertura y build de producción;
-- análisis de calidad con SonarCloud;
-- detección de secretos con Gitleaks;
-- análisis de infraestructura e imagen con Trivy;
-- prueba de humo mediante Docker Compose;
-- publicación de la imagen en GHCR para las referencias habilitadas.
+## Credenciales de desarrollo
 
-Los pull requests hacia `main` y `develop` ejecutan validaciones sin publicar una imagen. Los pushes a estas ramas ejecutan CI; la publicación se habilita para `main` y para ejecuciones sobre referencias `release`.
+Con el backend seed, use `delegado-rec` / `changeit123` y `VITE_CLIENT_ID=citypass-admin-web`. Estas credenciales no son aptas para ambientes compartidos.
 
 ## Documentación
 
-- [Guía de arquitectura](docs/guides/frontend-architecture.md): estructura, flujos internos y ubicación de responsabilidades.
-- [Guía para crear una feature](docs/guides/create-new-feature.md): pasos para incorporar pantallas e integraciones.
-- [Convenciones de código](docs/guides/style-guide.md): nomenclatura, TypeScript, React y pruebas.
-- [ADRs](docs/adr/): decisiones base sobre React, Vite, Tailwind/shadcn y arquitectura Feature-Driven.
-
-## Consideraciones de seguridad
-
-- Los tokens no se persisten en el almacenamiento del navegador.
-- El refresh se coordina para evitar solicitudes simultáneas y cada request se reintenta como máximo una vez.
-- La caché de datos se limpia al finalizar o invalidar una sesión.
-- Las variables `VITE_*` son públicas y nunca deben almacenar secretos.
-- Las verificaciones del JWT en el frontend no sustituyen la validación criptográfica y autorización del backend.
-- La imagen de Nginx se ejecuta sin privilegios y sirve archivos con permisos de solo lectura.
-
-## Equipo — Grupo 2
-
-| Integrante | Rol | Módulo |
-|---|---|---|
-| Abeledo, Federico | Project Manager | Login Federado |
-| Francisco Frate, Delfina | Scrum Master | Login Federado |
-| Hernandez, Nicolas | Backend | Login Federado |
-| Opatich, Ignacio | Frontend | Login Federado |
-| Ravaschio, Guido | DevOps | Login Federado |
-| Wu, Antonio | Security / Backend | Login Federado |
+- `docs/guides/frontend-architecture.md`
+- `docs/guides/create-new-feature.md`
+- `docs/guides/style-guide.md`
+- `docs/adr/`
+- Documentación integral y diagramas: carpeta `login-federado/docs/` del repositorio backend.
