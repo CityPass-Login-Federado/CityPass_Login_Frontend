@@ -37,6 +37,7 @@ export const useApproveAnomalyEvent = () => {
         queryClient.invalidateQueries({
           queryKey: panelQueryKeys.anomalyEvents(),
         }),
+        queryClient.invalidateQueries({ queryKey: panelQueryKeys.people() }),
         queryClient.invalidateQueries({ queryKey: panelQueryKeys.audit() }),
       ]);
     },

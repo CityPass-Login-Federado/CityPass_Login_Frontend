@@ -12,6 +12,8 @@ const person: PanelPerson = {
   sn: 'Pérez',
   email: 'jperez@citypass.local',
   disabled: false,
+  locked: false,
+  lockoutUntil: null,
   module: 'reclamos',
 };
 
@@ -68,12 +70,58 @@ describe('UsersTable', () => {
     expect(disableButton.querySelector('.lucide-trash2')).toBeInTheDocument();
   });
 
-  test('permite solicitar el desbloqueo temporal de la cuenta', async () => {
-    const user = userEvent.setup();
-    const onUnlock = vi.fn();
+  test('distingue los estados activo, deshabilitado y bloqueado temporalmente', () => {
+    const lockedUntil = '2026-11-15T15:30:00Z';
     render(
       <UsersTable
-        people={[person]}
+        people={[
+          person,
+          {
+            ...person,
+            employeeNumber: 'U000002',
+            uid: 'mlopez',
+            givenName: 'María',
+            disabled: true,
+          },
+          {
+            ...person,
+            employeeNumber: 'U000003',
+            uid: 'agarcia',
+            givenName: 'Ana',
+            locked: true,
+            lockoutUntil: lockedUntil,
+          },
+        ]}
+        groupNamesByUser={new Map()}
+        groupDataStatus="ready"
+        isGeneralAdmin={false}
+        onEdit={vi.fn()}
+        onUnlock={vi.fn()}
+        onChangeStatus={vi.fn()}
+        isUnlockPending={false}
+      />,
+    );
+
+    expect(screen.getByText('Activo')).toBeInTheDocument();
+    expect(screen.getByText('Deshabilitado')).toBeInTheDocument();
+    expect(screen.getByText('Bloqueado temporalmente')).toBeInTheDocument();
+    expect(screen.getByText(/Hasta/)).toContainElement(
+      document.querySelector(`time[datetime="${lockedUntil}"]`),
+    );
+  });
+
+  test('solo permite solicitar el desbloqueo temporal de una cuenta bloqueada', async () => {
+    const user = userEvent.setup();
+    const onUnlock = vi.fn();
+    const lockedPerson = {
+      ...person,
+      employeeNumber: 'U000002',
+      locked: true,
+      lockoutUntil: '2026-11-15T15:30:00Z',
+    };
+    render(
+      <UsersTable
+        people={[person, lockedPerson]}
         groupNamesByUser={new Map()}
         groupDataStatus="ready"
         isGeneralAdmin={false}
@@ -87,10 +135,13 @@ describe('UsersTable', () => {
     const unlockButton = screen.getByRole('button', {
       name: 'Desbloquear cuenta de Juan Pérez',
     });
+    expect(
+      screen.getAllByRole('button', { name: 'Desbloquear cuenta de Juan Pérez' }),
+    ).toHaveLength(1);
     expect(unlockButton.querySelector('.lucide-lock-open')).toBeInTheDocument();
 
     await user.click(unlockButton);
 
-    expect(onUnlock).toHaveBeenCalledWith(person);
+    expect(onUnlock).toHaveBeenCalledWith(lockedPerson);
   });
 });

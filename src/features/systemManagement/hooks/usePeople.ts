@@ -66,7 +66,11 @@ export const useUnlockPerson = () => {
 
   return useMutation({
     mutationFn: (variables: UnlockPersonVariables) => unlockPerson(variables),
-    onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: panelQueryKeys.audit() }),
+    onSettled: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: panelQueryKeys.people() }),
+        queryClient.invalidateQueries({ queryKey: panelQueryKeys.audit() }),
+      ]);
+    },
   });
 };

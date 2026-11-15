@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table';
 
 import { type PanelPerson } from '../../types';
+import { formatAuditDate } from '../../utils/audit';
 import { getScopedMemberKey } from '../../utils/groups';
 import { getModuleName } from '../../utils/modules';
 
@@ -90,9 +91,28 @@ export const UsersTable = ({
                 <TableCell>{getModuleName(person.module)}</TableCell>
               )}
               <TableCell>
-                <Badge variant={person.disabled ? 'destructive' : 'success'}>
-                  {person.disabled ? 'Inactivo' : 'Activo'}
-                </Badge>
+                <div className="space-y-1">
+                  {person.disabled ? (
+                    <Badge variant="destructive">Deshabilitado</Badge>
+                  ) : person.locked ? (
+                    <Badge
+                      variant="outline"
+                      className="border-amber-300 bg-amber-50 text-amber-800"
+                    >
+                      Bloqueado temporalmente
+                    </Badge>
+                  ) : (
+                    <Badge variant="success">Activo</Badge>
+                  )}
+                  {person.locked && person.lockoutUntil && (
+                    <p className="text-xs text-muted-foreground">
+                      Hasta{' '}
+                      <time dateTime={person.lockoutUntil}>
+                        {formatAuditDate(person.lockoutUntil)}
+                      </time>
+                    </p>
+                  )}
+                </div>
               </TableCell>
               <TableCell>
                 <div className="flex justify-end gap-1">
@@ -106,17 +126,19 @@ export const UsersTable = ({
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
-                    onClick={() => onUnlock(person)}
-                    disabled={isUnlockPending}
-                    aria-label={`Desbloquear cuenta de ${person.givenName} ${person.sn}`}
-                  >
-                    <LockOpen className="h-4 w-4" />
-                  </Button>
+                  {person.locked && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                      onClick={() => onUnlock(person)}
+                      disabled={isUnlockPending}
+                      aria-label={`Desbloquear cuenta de ${person.givenName} ${person.sn}`}
+                    >
+                      <LockOpen className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     variant="ghost"

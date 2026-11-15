@@ -172,7 +172,7 @@ describe('system management utils', () => {
 
   test('hooks de people y groups respetan el flag enabled sin ejecutar queries en deshabilitado', async () => {
     vi.mocked(fetchPeople).mockResolvedValue({
-      content: [{ uid: 'u1', employeeNumber: 'E1', givenName: 'Ana', sn: 'Lopez', email: 'ana@example.com', disabled: false }],
+      content: [{ uid: 'u1', employeeNumber: 'E1', givenName: 'Ana', sn: 'Lopez', email: 'ana@example.com', disabled: false, locked: false, lockoutUntil: null }],
       totalElements: 1,
       totalPages: 1,
       currentPage: 0,

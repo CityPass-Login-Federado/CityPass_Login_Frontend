@@ -10,6 +10,8 @@ export interface PanelPerson {
   sn: string;
   email: string;
   disabled: boolean;
+  locked: boolean;
+  lockoutUntil: string | null;
   module?: string;
 }
 

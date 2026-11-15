@@ -13,6 +13,7 @@ import {
   fetchPeople,
   removeUserFromGroup,
   setPersonDisabled,
+  unlockPerson,
   updatePerson,
 } from '../api/panelApi';
 import { type PanelGroup, type PanelPerson } from '../types';
@@ -29,6 +30,7 @@ import {
   useCreatePerson,
   usePeople,
   useSetPersonStatus,
+  useUnlockPerson,
   useUpdatePerson,
 } from './usePeople';
 
@@ -42,11 +44,13 @@ vi.mock('../api/panelApi', () => ({
   fetchPeople: vi.fn(),
   removeUserFromGroup: vi.fn(),
   setPersonDisabled: vi.fn(),
+  unlockPerson: vi.fn(),
   updatePerson: vi.fn(),
 }));
 
 const peopleListKey = panelQueryKeys.peopleList({ page: 0, size: 10 });
 const groupsListKey = panelQueryKeys.groupsList({ page: 0, size: 10 });
+const auditListKey = panelQueryKeys.auditList({ page: 0, size: 10 });
 
 const person: PanelPerson = {
   employeeNumber: 'U000001',
@@ -55,6 +59,8 @@ const person: PanelPerson = {
   sn: 'Pérez',
   email: 'jperez@citypass.local',
   disabled: false,
+  locked: false,
+  lockoutUntil: null,
 };
 
 const group: PanelGroup = {
@@ -73,6 +79,7 @@ const createQueryClient = () => {
 
   queryClient.setQueryData(peopleListKey, { content: [person] });
   queryClient.setQueryData(groupsListKey, { content: [group] });
+  queryClient.setQueryData(auditListKey, { content: [] });
 
   return queryClient;
 };
@@ -173,6 +180,23 @@ describe('reconciliación de cachés del panel', () => {
     });
 
     expectPeopleAndGroupsInvalidated(queryClient);
+    queryClient.clear();
+  });
+
+  test('desbloquear una persona invalida personas y auditoría', async () => {
+    vi.mocked(unlockPerson).mockResolvedValueOnce();
+    const queryClient = createQueryClient();
+    const { result } = renderHook(() => useUnlockPerson(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ uid: 'jperez' });
+    });
+
+    expect(queryClient.getQueryState(peopleListKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(auditListKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(groupsListKey)?.isInvalidated).toBe(false);
     queryClient.clear();
   });
 

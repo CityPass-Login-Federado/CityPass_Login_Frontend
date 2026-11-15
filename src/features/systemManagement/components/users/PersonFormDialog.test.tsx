@@ -22,6 +22,8 @@ const person: PanelPerson = {
   sn: 'Pérez',
   email: 'jperez@citypass.local',
   disabled: false,
+  locked: false,
+  lockoutUntil: null,
   module: 'reclamos',
 };
 const modules = [

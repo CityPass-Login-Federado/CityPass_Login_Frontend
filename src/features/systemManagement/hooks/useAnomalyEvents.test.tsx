@@ -103,7 +103,7 @@ describe('useAnomalyEvents', () => {
     queryClient.clear();
   });
 
-  test('aprobar invalida los eventos y la auditoría', async () => {
+  test('aprobar invalida los eventos, las personas y la auditoría', async () => {
     const approvedEvent = {
       ...event,
       status: 'APPROVED' as const,
@@ -114,8 +114,10 @@ describe('useAnomalyEvents', () => {
     const queryClient = createQueryClient();
     const anomalyKey = panelQueryKeys.anomalyEventsList(params);
     const auditKey = panelQueryKeys.auditList({ page: 0, size: 20 });
+    const peopleKey = panelQueryKeys.peopleList({ page: 0, size: 20 });
     queryClient.setQueryData(anomalyKey, { content: [event] });
     queryClient.setQueryData(auditKey, { content: [] });
+    queryClient.setQueryData(peopleKey, { content: [] });
     const { result } = renderHook(() => useApproveAnomalyEvent(), {
       wrapper: createWrapper(queryClient),
     });
@@ -126,6 +128,7 @@ describe('useAnomalyEvents', () => {
 
     expect(approveAnomalyEvent).toHaveBeenCalledWith({ eventId: event.id });
     expect(queryClient.getQueryState(anomalyKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(peopleKey)?.isInvalidated).toBe(true);
     expect(queryClient.getQueryState(auditKey)?.isInvalidated).toBe(true);
     queryClient.clear();
   });
