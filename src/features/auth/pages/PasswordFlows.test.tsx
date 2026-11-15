@@ -52,11 +52,14 @@ describe('password flows', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mutationState.forgot.isSuccess = false;
+    mutationState.forgot.isPending = false;
     mutationState.forgot.isError = false;
     mutationState.forgot.error = null;
     mutationState.reset.isError = false;
+    mutationState.reset.isPending = false;
     mutationState.reset.error = null;
     mutationState.change.isError = false;
+    mutationState.change.isPending = false;
     mutationState.change.error = null;
     useAuthStore.setState({ session: null, isHydrated: true });
   });
@@ -91,6 +94,9 @@ describe('password flows', () => {
     );
 
     expect(screen.queryByLabelText('Contraseña actual')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Restablecer contraseña' }),
+    ).toBeInTheDocument();
     await user.type(screen.getByLabelText('Nueva contraseña'), 'abcdefgh');
     await user.type(screen.getByLabelText('Confirmar contraseña'), 'abcdefgh');
     await user.click(
@@ -120,11 +126,14 @@ describe('password flows', () => {
     });
     renderRoute('/reset-password', <PasswordResetPage />);
 
+    expect(
+      screen.getByRole('heading', { name: 'Cambiar contraseña' }),
+    ).toBeInTheDocument();
     await user.type(screen.getByLabelText('Contraseña actual'), 'actual123');
     await user.type(screen.getByLabelText('Nueva contraseña'), 'abcdefgh');
     await user.type(screen.getByLabelText('Confirmar contraseña'), 'abcdefgh');
     await user.click(
-      screen.getByRole('button', { name: 'Restablecer contraseña' }),
+      screen.getByRole('button', { name: 'Cambiar contraseña' }),
     );
 
     await waitFor(() => {
@@ -134,6 +143,37 @@ describe('password flows', () => {
       });
     });
   });
+
+  test.each([
+    ['recovery', 'Restableciendo…'],
+    ['change', 'Cambiando…'],
+  ] as const)(
+    'muestra el estado pendiente correspondiente al modo %s',
+    (mode, pendingLabel) => {
+      if (mode === 'recovery') {
+        mutationState.reset.isPending = true;
+        renderRoute('/reset-password?token=abc', <PasswordResetPage />);
+      } else {
+        mutationState.change.isPending = true;
+        useAuthStore.setState({
+          session: {
+            userId: 'U1',
+            username: 'admin',
+            groups: [],
+            roles: [],
+            adminScope: 'GENERAL',
+            expiresAt: Date.now() + 60_000,
+          },
+          isHydrated: true,
+        });
+        renderRoute('/reset-password', <PasswordResetPage />);
+      }
+
+      expect(
+        screen.getByRole('button', { name: pendingLabel }),
+      ).toBeDisabled();
+    },
+  );
 
   test('sin token ni sesión informa que el enlace no es válido', () => {
     renderRoute('/reset-password', <PasswordResetPage />);

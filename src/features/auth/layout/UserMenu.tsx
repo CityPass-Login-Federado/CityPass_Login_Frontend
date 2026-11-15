@@ -123,7 +123,7 @@ export const UserMenu = () => {
               className="flex w-full items-center gap-2 rounded-sm px-2.5 py-2 text-sm font-medium outline-none transition-colors hover:bg-accent focus:bg-accent"
             >
               <KeyRound className="h-4 w-4" aria-hidden="true" />
-              Restablecer contraseña
+              Cambiar contraseña
             </button>
             <button
               type="button"

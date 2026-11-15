@@ -216,7 +216,7 @@ export const AssignUserToGroupCard = ({
                       placeholder={
                         modulesQuery.isPending
                           ? 'Cargando módulos…'
-                          : 'Seleccione un módulo'
+                          : 'Seleccioná un módulo'
                       }
                     />
                   </SelectTrigger>
@@ -242,7 +242,7 @@ export const AssignUserToGroupCard = ({
                   )}
                 {!selectedModule && !isModuleCatalogUnavailable && (
                   <p className="text-xs text-muted-foreground">
-                    Seleccione un módulo para cargar sus usuarios y grupos.
+                    Seleccioná un módulo para cargar sus usuarios y grupos.
                   </p>
                 )}
               </div>

@@ -17,7 +17,7 @@ export const GroupsManagementPage = () => {
   return (
     <ManagementPageLayout
       title="Panel de Gestión de Grupos"
-      description="Gestiona todos los grupos desde un único lugar."
+      description="Gestioná todos los grupos desde un único lugar."
     >
       <GroupsSection
         isGeneralAdmin={isGeneralAdmin}

@@ -8,7 +8,7 @@ const LOGIN_ERROR_MESSAGES: Readonly<Partial<Record<number, string>>> = {
   503: 'Servicio de validación temporalmente no disponible',
 };
 
-const LOGIN_ERROR_FALLBACK = 'Error al iniciar sesión. Intente nuevamente.';
+const LOGIN_ERROR_FALLBACK = 'Error al iniciar sesión. Intentá nuevamente.';
 
 export const getApiErrorMessage = (
   error: AxiosError<ApiError> | null,

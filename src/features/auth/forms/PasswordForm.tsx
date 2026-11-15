@@ -83,8 +83,8 @@ export const PasswordForm = ({ mode, token }: PasswordFormProps) => {
         <div className="space-y-2 text-center">
           <h1 className="font-heading text-3xl font-bold text-foreground">
             {mode === 'recovery'
-              ? 'Nueva contraseña'
-              : 'Restablecer contraseña'}
+              ? 'Restablecer contraseña'
+              : 'Cambiar contraseña'}
           </h1>
           <p className="text-sm text-muted-foreground">
             {mode === 'recovery'
@@ -221,8 +221,12 @@ export const PasswordForm = ({ mode, token }: PasswordFormProps) => {
             disabled={activeMutation.isPending}
           >
             {activeMutation.isPending
-              ? 'Restableciendo…'
-              : 'Restablecer contraseña'}
+              ? mode === 'recovery'
+                ? 'Restableciendo…'
+                : 'Cambiando…'
+              : mode === 'recovery'
+                ? 'Restablecer contraseña'
+                : 'Cambiar contraseña'}
           </Button>
 
           <div className="text-center">

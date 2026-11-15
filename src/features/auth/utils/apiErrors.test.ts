@@ -44,7 +44,7 @@ describe('apiErrors', () => {
     const error = new AxiosError<ApiError>('Network Error');
 
     expect(getLoginErrorMessage(error)).toBe(
-      'Error al iniciar sesión. Intente nuevamente.',
+      'Error al iniciar sesión. Intentá nuevamente.',
     );
   });
 

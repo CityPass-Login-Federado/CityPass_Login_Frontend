@@ -79,7 +79,7 @@ describe('UserMenu', () => {
 
     expect(screen.getByRole('menu', { name: 'Opciones de usuario' })).toBeVisible();
     expect(
-      screen.getByRole('menuitem', { name: 'Restablecer contraseña' }),
+      screen.getByRole('menuitem', { name: 'Cambiar contraseña' }),
     ).toBeVisible();
     expect(screen.getByRole('menuitem', { name: 'Cerrar sesión' })).toBeVisible();
     expect(screen.getAllByText('Admin General')).toHaveLength(2);
@@ -96,7 +96,7 @@ describe('UserMenu', () => {
       screen.getByRole('button', { name: 'Abrir menú de usuario' }),
     );
     await user.click(
-      screen.getByRole('menuitem', { name: 'Restablecer contraseña' }),
+      screen.getByRole('menuitem', { name: 'Cambiar contraseña' }),
     );
 
     expect(await screen.findByText('Cambio de contraseña')).toBeInTheDocument();

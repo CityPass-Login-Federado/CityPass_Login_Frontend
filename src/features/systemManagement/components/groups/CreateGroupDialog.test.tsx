@@ -79,7 +79,7 @@ describe('CreateGroupDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Crear grupo' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Seleccione un módulo',
+      'Seleccioná un módulo',
     );
     expect(mocks.mutate).not.toHaveBeenCalled();
   });

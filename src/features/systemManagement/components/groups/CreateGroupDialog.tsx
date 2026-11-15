@@ -73,7 +73,7 @@ export const CreateGroupDialog = ({
 
   const handleFormSubmit = (values: GroupFormValues) => {
     if (isGeneralAdmin && !values.module) {
-      setError('module', { message: 'Seleccione un módulo' });
+      setError('module', { message: 'Seleccioná un módulo' });
       return;
     }
 
@@ -128,7 +128,7 @@ export const CreateGroupDialog = ({
                         placeholder={
                           isModulesLoading
                             ? 'Cargando módulos…'
-                            : 'Seleccione un módulo'
+                            : 'Seleccioná un módulo'
                         }
                       />
                     </SelectTrigger>

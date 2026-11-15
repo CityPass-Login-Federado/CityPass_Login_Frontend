@@ -97,11 +97,19 @@ describe('password mutation success', () => {
   });
 
   test.each([
-    ['recovery', 'resetPassword'],
-    ['change', 'changePassword'],
+    [
+      'recovery',
+      'resetPassword',
+      'Contraseña restablecida. Iniciá sesión nuevamente.',
+    ],
+    [
+      'change',
+      'changePassword',
+      'Contraseña cambiada. Iniciá sesión nuevamente.',
+    ],
   ] as const)(
     'el modo %s limpia la sesión y vuelve al login',
-    async (mode, apiMethod) => {
+    async (mode, apiMethod, successMessage) => {
       vi.spyOn(passwordApi, apiMethod).mockResolvedValue();
       const queryClient = renderMutation(mode);
       const user = userEvent.setup();
@@ -114,9 +122,7 @@ describe('password mutation success', () => {
         expect(getRefreshToken()).toBeNull();
         expect(useAuthStore.getState().session).toBeNull();
         expect(queryClient.getQueryData(['private-data'])).toBeUndefined();
-        expect(toast.success).toHaveBeenCalledWith(
-          'Contraseña actualizada. Iniciá sesión nuevamente.',
-        );
+        expect(toast.success).toHaveBeenCalledWith(successMessage);
       });
     },
   );

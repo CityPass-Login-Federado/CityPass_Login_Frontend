@@ -113,7 +113,7 @@ describe('PersonFormDialog', () => {
     await user.click(screen.getByRole('button', { name: 'Crear usuario' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Seleccione un módulo',
+      'Seleccioná un módulo',
     );
     expect(mocks.createMutate).not.toHaveBeenCalled();
   });

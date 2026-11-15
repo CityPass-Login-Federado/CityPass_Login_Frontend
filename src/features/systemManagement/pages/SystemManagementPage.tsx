@@ -19,7 +19,7 @@ export const SystemManagementPage = () => {
   return (
     <ManagementPageLayout
       title="Panel de Gestión del Sistema"
-      description="Gestiona usuarios y grupos, controla sus accesos y administra las membresías disponibles."
+      description="Gestioná usuarios y grupos, controlá sus accesos y administrá las membresías disponibles."
     >
       <UsersSection
         isGeneralAdmin={isGeneralAdmin}
