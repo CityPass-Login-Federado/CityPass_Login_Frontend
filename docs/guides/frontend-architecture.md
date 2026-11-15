@@ -14,17 +14,27 @@ src/
 │   └── AppErrorBoundary.tsx   # Límite global de errores del panel
 ├── features/
 │   ├── auth/                  # Autenticación, sesión y contraseñas
+│   │   ├── api/               # Login, logout y contraseñas
 │   │   ├── forms/             # Formularios de acceso y contraseñas
+│   │   ├── hooks/             # Mutaciones y navegación
 │   │   ├── layout/            # Layout público y menú de sesión
 │   │   ├── pages/             # Pantallas asociadas a rutas
-│   │   └── routing/           # Guards de navegación
+│   │   ├── routing/           # Guards de navegación
+│   │   ├── session/           # Tokens únicamente en memoria
+│   │   ├── store/             # Sesión compartida con Zustand
+│   │   ├── types/             # DTO y claims
+│   │   └── utils/             # JWT, validación y errores
 │   └── systemManagement/      # Administración de usuarios y grupos
 │       ├── components/
 │       │   ├── groups/        # Componentes propios de grupos
 │       │   ├── layout/        # Layout y navegación del panel
 │       │   ├── shared/        # Componentes comunes del dominio
 │       │   └── users/         # Componentes propios de usuarios
-│       └── pages/             # Pantallas asociadas a rutas del panel
+│       ├── hooks/             # Queries y mutaciones
+│       ├── pages/             # Pantallas asociadas a rutas del panel
+│       ├── schemas/           # Zod
+│       ├── types/             # Contratos del panel
+│       └── utils/             # Caché, módulos, filtros y paginación
 ├── lib/
 │   ├── axios.ts               # Cliente HTTP e interceptores de autenticación
 │   ├── queryClient.ts         # Configuración compartida de TanStack Query
@@ -79,6 +89,7 @@ Las rutas actuales son:
 | `/forgot-password` | Público | `ForgotPasswordPage` |
 | `/reset-password` | Público | `PasswordResetPage` |
 | `/unauthorized` | Público | `UnauthorizedPage` |
+| `/home` | Autenticado | `UserHomePage` |
 | `/panel` | Protegido | `SystemManagementPage` |
 | `/panel/users` | Protegido | `UsersManagementPage` |
 | `/panel/groups` | Protegido | `GroupsManagementPage` |
@@ -92,8 +103,11 @@ Todo lo relacionado con identidad y sesión vive en `src/features/auth/`.
 ```text
 auth/
 ├── api/          # Login, logout y operaciones de contraseña
-├── components/   # Pantallas, formularios, menú y protección de rutas
+├── forms/        # Login y formularios de contraseña
 ├── hooks/        # Mutaciones y efectos de navegación
+├── layout/       # Layout público y menú
+├── pages/        # Pantallas de rutas
+├── routing/      # AuthenticatedRoute y ProtectedRoute
 ├── session/      # Custodia de tokens y creación de la sesión
 ├── store/        # Estado compartido de autenticación
 ├── types/        # Contratos de la API, claims y modelo de sesión
@@ -109,7 +123,7 @@ LoginForm
   → POST /auth/login
   → establishSession
   → tokenVault + useAuthStore
-  → navegación a /panel
+  → navegación a /panel o /home según permisos
 ```
 
 1. `LoginForm` valida los datos y ejecuta `useLogin`.
@@ -117,7 +131,7 @@ LoginForm
 3. `establishSession` interpreta el access token y comprueba el contrato mínimo esperado: expiración, audiencia, tipo de token y versión.
 4. `tokenVault.ts` conserva el access token y el refresh token únicamente en memoria.
 5. `useAuthStore.ts` conserva los datos necesarios para la interfaz: usuario, módulo, grupos, roles, alcance administrativo y vencimiento.
-6. Después del éxito, React Router navega a `/panel`.
+6. Después del éxito, React Router navega a `/panel` si la sesión puede administrarlo; en caso contrario navega a `/home`.
 
 El frontend decodifica claims para construir la interfaz, pero no verifica la firma criptográfica del JWT. La API es siempre la responsable final de autenticar y autorizar cada operación.
 
@@ -156,6 +170,8 @@ Estas verificaciones controlan la experiencia de navegación. No reemplazan los 
 
 Un cambio o restablecimiento exitoso de contraseña también limpia la sesión y exige una nueva autenticación.
 
+> Estado de integración: `/auth/forgot-password`, `/auth/reset-password` y `/me/change-password` están implementados en el cliente, pero no existen en el backend auditado.
+
 ## 4. Feature de administración del sistema
 
 La administración de usuarios, grupos y membresías vive en `src/features/systemManagement/`.
@@ -189,11 +205,26 @@ systemManagement/
 - `ManagementPageLayout` contiene la estructura compartida, la navegación lateral y el menú del usuario.
 - `UsersSection` y `GroupsSection` coordinan filtros, paginación, consultas y diálogos.
 - `UsersTable` y `GroupsTable` se ocupan de presentar filas y acciones.
-- El administrador global obtiene los módulos desde `GET /panel/modules`; el frontend conserva solamente sus nombres de presentación y usa el identificador del backend en filtros y operaciones.
+- La vista de administrador global intenta obtener módulos desde `GET /panel/modules`; ese endpoint no existe todavía en el backend auditado.
 - Los componentes `*Dialog` contienen formularios o confirmaciones específicas.
 - `SectionState` y `TablePagination` resuelven estados visuales reutilizados por ambas secciones.
 
 Los componentes de `systemManagement` pueden consumir sesión y permisos desde `auth`. Esa dependencia es intencional; las features están separadas por responsabilidad, pero no son micro-frontends independientes.
+
+### Compatibilidad real con el backend
+
+La feature está implementada y probada con mocks, pero su contrato no coincide con el backend actual:
+
+| Cliente frontend | Backend Spring Boot |
+|---|---|
+| `/panel/people` | `/panel/personas` |
+| `/panel/groups` | `/panel/grupos` |
+| `/members` | `/miembros` |
+| `/panel/modules` | ausente |
+| `/panel/admin/people`, `/panel/admin/groups` | ausentes |
+| `/panel/group-memberships/bulk` | ausente |
+
+El frontend envía filtros, paginación y `module`; el backend devuelve listas y deriva el módulo exclusivamente del JWT. Esta brecha debe resolverse mediante un contrato OpenAPI único antes de considerar el panel integrado.
 
 ## 5. Flujo de datos del panel
 
@@ -289,6 +320,8 @@ Si el caso de uso pertenece a un dominio nuevo, se crea una carpeta dentro de `s
 
 Vitest y React Testing Library cubren componentes, hooks y utilidades. Los tests se colocan junto al código probado con el sufijo `.test.ts` o `.test.tsx`.
 
+El árbol auditado contiene 32 archivos de test y 143 declaraciones `it`/`test`. `vitest.config.ts` exige 60 % en statements, branches, functions y lines; el repositorio no incluye un reporte de cobertura versionado.
+
 Las pruebas suelen dividirse en:
 
 - utilidades y esquemas como funciones puras;
@@ -340,6 +373,8 @@ Los workflows de `.github/workflows/` realizan:
 - análisis de configuración e imagen con Trivy;
 - prueba de humo con Docker Compose;
 - publicación de la imagen en GHCR para las referencias habilitadas.
+
+El smoke test comprueba que Nginx entrega HTML; no levanta el backend ni valida login o panel end-to-end.
 
 ## 12. Reglas que conviene preservar
 
