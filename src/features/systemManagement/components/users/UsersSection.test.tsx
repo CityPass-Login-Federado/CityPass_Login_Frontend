@@ -9,11 +9,14 @@ const mocks = vi.hoisted(() => ({
   useGroups: vi.fn(),
   useModules: vi.fn(),
   useSetPersonStatus: vi.fn(),
+  useUnlockPerson: vi.fn(),
+  unlockMutate: vi.fn(),
 }));
 
 vi.mock('../../hooks/usePeople', () => ({
   usePeople: mocks.usePeople,
   useSetPersonStatus: mocks.useSetPersonStatus,
+  useUnlockPerson: mocks.useUnlockPerson,
 }));
 
 vi.mock('../../hooks/useGroups', () => ({ useGroups: mocks.useGroups }));
@@ -46,8 +49,23 @@ vi.mock('./UserFilters', () => ({
 vi.mock('./PersonFormDialog', () => ({ PersonFormDialog: () => null }));
 vi.mock('../shared/TablePagination', () => ({ TablePagination: () => null }));
 vi.mock('./UsersTable', () => ({
-  UsersTable: ({ people }: { people: PanelPerson[] }) => (
-    <div>{people.map((person) => person.uid).join(', ')}</div>
+  UsersTable: ({
+    people,
+    onUnlock,
+  }: {
+    people: PanelPerson[];
+    onUnlock: (person: PanelPerson) => void;
+  }) => (
+    <div>
+      {people.map((person) => (
+        <div key={person.employeeNumber}>
+          <span>{person.uid}</span>
+          <button type="button" onClick={() => onUnlock(person)}>
+            Solicitar desbloqueo de {person.uid}
+          </button>
+        </div>
+      ))}
+    </div>
   ),
 }));
 
@@ -81,6 +99,10 @@ describe('UsersSection', () => {
     mocks.useSetPersonStatus.mockReturnValue({
       isPending: false,
       mutate: vi.fn(),
+    });
+    mocks.useUnlockPerson.mockReturnValue({
+      isPending: false,
+      mutate: mocks.unlockMutate,
     });
     mocks.usePeople.mockReturnValue({
       data: {
@@ -176,5 +198,50 @@ describe('UsersSection', () => {
         expect.objectContaining({ module: undefined }),
       );
     });
+  });
+
+  test('confirma y ejecuta el desbloqueo temporal con el módulo de la persona', () => {
+    const onNotice = vi.fn();
+    mocks.usePeople.mockReturnValue({
+      data: {
+        content: [stalePerson],
+        totalElements: 1,
+        totalPages: 1,
+        currentPage: 0,
+        size: 8,
+      },
+      isError: false,
+      isPending: false,
+      isPlaceholderData: false,
+    });
+    mocks.unlockMutate.mockImplementation((_variables, options) =>
+      options.onSuccess(),
+    );
+
+    render(<UsersSection isGeneralAdmin onNotice={onNotice} />);
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: `Solicitar desbloqueo de ${stalePerson.uid}`,
+      }),
+    );
+    expect(screen.getByRole('alertdialog')).toHaveTextContent(
+      'no rehabilita una cuenta deshabilitada',
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Desbloquear cuenta' }),
+    );
+
+    expect(mocks.unlockMutate).toHaveBeenCalledWith(
+      { uid: stalePerson.uid, module: stalePerson.module },
+      expect.objectContaining({
+        onSuccess: expect.any(Function),
+        onError: expect.any(Function),
+      }),
+    );
+    expect(onNotice).toHaveBeenCalledWith(
+      'success',
+      'Bloqueo temporal e intentos fallidos eliminados.',
+    );
   });
 });

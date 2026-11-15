@@ -14,6 +14,7 @@ import { useAuthStore } from '@/features/auth/store/useAuthStore';
 import { SystemManagementPage } from '@/features/systemManagement/pages/SystemManagementPage';
 import { GroupsManagementPage } from '@/features/systemManagement/pages/GroupsManagementPage';
 import { UsersManagementPage } from '@/features/systemManagement/pages/UsersManagementPage';
+import { AuditManagementPage } from '@/features/systemManagement/pages/AuditManagementPage';
 import { queryClient } from '@/lib/queryClient';
 
 export const App = () => {
@@ -56,6 +57,14 @@ export const App = () => {
               element={
                 <AppErrorBoundary>
                   <UsersManagementPage />
+                </AppErrorBoundary>
+              }
+            />
+            <Route
+              path="/panel/audit"
+              element={
+                <AppErrorBoundary>
+                  <AuditManagementPage />
                 </AppErrorBoundary>
               }
             />

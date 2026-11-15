@@ -7,11 +7,13 @@ import {
   createGroup,
   createPerson,
   deleteGroup,
+  fetchAuditEntries,
   fetchGroups,
   fetchModules,
   fetchPeople,
   removeUserFromGroup,
   setPersonDisabled,
+  unlockPerson,
   updatePerson,
 } from './panelApi';
 
@@ -63,6 +65,53 @@ describe('panelApi', () => {
 
     await expect(fetchModules()).resolves.toEqual(modules);
     expect(getSpy).toHaveBeenCalledWith('/panel/modules');
+  });
+
+  test('fetchAuditEntries envía filtros y conserva la respuesta paginada', async () => {
+    const response = {
+      content: [
+        {
+          id: '9423464d-dc24-4bdf-b23a-c45c6bb64826',
+          actorSub: 'U000042',
+          actorUid: 'jperez',
+          module: 'reclamos',
+          action: 'PERSON_CREATED',
+          target: 'uid=ana,ou=people,ou=reclamos',
+          detail: null,
+          occurredAt: '2026-11-14T12:30:00Z',
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+      currentPage: 0,
+      size: 20,
+    };
+    const getSpy = vi
+      .spyOn(axiosInstance, 'get')
+      .mockResolvedValue({ data: response });
+
+    const result = await fetchAuditEntries({
+      page: 0,
+      size: 20,
+      actor: 'jperez',
+      action: 'PERSON_CREATED',
+      from: '2026-11-01T03:00:00.000Z',
+      to: '2026-11-15T02:59:59.999Z',
+      module: 'reclamos',
+    });
+
+    expect(getSpy).toHaveBeenCalledWith('/panel/audit', {
+      params: {
+        page: 0,
+        size: 20,
+        actor: 'jperez',
+        action: 'PERSON_CREATED',
+        from: '2026-11-01T03:00:00.000Z',
+        to: '2026-11-15T02:59:59.999Z',
+        module: 'reclamos',
+      },
+    });
+    expect(result).toEqual(response);
   });
 
   test('fetchPeople usa un tamaño seguro cuando el size llega a 0', async () => {
@@ -124,6 +173,20 @@ describe('panelApi', () => {
       '/panel/people/u-1/disable',
       undefined,
       { params: { module: 'movilidad' } },
+    );
+  });
+
+  test('unlockPerson limpia el bloqueo temporal dentro del módulo', async () => {
+    const postSpy = vi
+      .spyOn(axiosInstance, 'post')
+      .mockResolvedValue({ data: undefined });
+
+    await unlockPerson({ uid: 'juan pérez', module: 'reclamos' });
+
+    expect(postSpy).toHaveBeenCalledWith(
+      '/panel/people/juan%20p%C3%A9rez/unlock',
+      undefined,
+      { params: { module: 'reclamos' } },
     );
   });
 

@@ -36,6 +36,7 @@ export const SystemManagementPage = () => {
           onNotice={handleNotice}
         />
       </div>
+
     </ManagementPageLayout>
   );
 };

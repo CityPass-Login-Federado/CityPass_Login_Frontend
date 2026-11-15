@@ -1,4 +1,4 @@
-import { Pencil, RotateCcw, Trash2 } from 'lucide-react';
+import { LockOpen, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,9 @@ interface UsersTableProps {
   groupDataStatus: 'loading' | 'ready' | 'error';
   isGeneralAdmin: boolean;
   onEdit: (person: PanelPerson) => void;
+  onUnlock: (person: PanelPerson) => void;
   onChangeStatus: (person: PanelPerson) => void;
+  isUnlockPending: boolean;
 }
 
 export const UsersTable = ({
@@ -30,7 +32,9 @@ export const UsersTable = ({
   groupDataStatus,
   isGeneralAdmin,
   onEdit,
+  onUnlock,
   onChangeStatus,
+  isUnlockPending,
 }: UsersTableProps) => (
   <div className="overflow-hidden rounded-lg border">
     <Table>
@@ -101,6 +105,17 @@ export const UsersTable = ({
                     aria-label={`Modificar a ${person.givenName} ${person.sn}`}
                   >
                     <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+                    onClick={() => onUnlock(person)}
+                    disabled={isUnlockPending}
+                    aria-label={`Desbloquear cuenta de ${person.givenName} ${person.sn}`}
+                  >
+                    <LockOpen className="h-4 w-4" />
                   </Button>
                   <Button
                     type="button"

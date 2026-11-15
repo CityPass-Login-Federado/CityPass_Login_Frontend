@@ -2,6 +2,7 @@ import { axiosInstance } from '@/lib/axios';
 
 import {
   type AssignUserToGroupRequest,
+  type AuditListParams,
   type BulkMembershipRequest,
   type BulkMembershipResponse,
   type CreateGroupVariables,
@@ -10,10 +11,12 @@ import {
   type GroupListParams,
   type MembershipChangeResponse,
   type PaginatedResponse,
+  type PanelAuditEntry,
   type PanelGroup,
   type PanelPerson,
   type PeopleListParams,
   type RemoveGroupMemberRequest,
+  type UnlockPersonVariables,
   type UpdatePersonVariables,
 } from '../types';
 import {
@@ -33,6 +36,16 @@ const moduleConfig = (module?: string) =>
 
 export const fetchModules = async (): Promise<string[]> => {
   const response = await axiosInstance.get<string[]>('/panel/modules');
+  return response.data;
+};
+
+export const fetchAuditEntries = async (
+  params: AuditListParams,
+): Promise<PaginatedResponse<PanelAuditEntry>> => {
+  const response = await axiosInstance.get<PaginatedResponse<PanelAuditEntry>>(
+    '/panel/audit',
+    { params: withoutEmptyParams(params) },
+  );
   return response.data;
 };
 
@@ -99,6 +112,17 @@ export const setPersonDisabled = async ({
   const action = disabled ? 'disable' : 'enable';
   await axiosInstance.post(
     `/panel/people/${encodeURIComponent(uid)}/${action}`,
+    undefined,
+    moduleConfig(module),
+  );
+};
+
+export const unlockPerson = async ({
+  uid,
+  module,
+}: UnlockPersonVariables): Promise<void> => {
+  await axiosInstance.post(
+    `/panel/people/${encodeURIComponent(uid)}/unlock`,
     undefined,
     moduleConfig(module),
   );

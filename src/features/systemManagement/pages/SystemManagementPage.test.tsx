@@ -102,5 +102,6 @@ describe('SystemManagementPage', () => {
     expect(
       screen.queryByText('No se pudo guardar el usuario.'),
     ).not.toBeInTheDocument();
+    expect(screen.queryByText('Auditoría general')).not.toBeInTheDocument();
   });
 });
