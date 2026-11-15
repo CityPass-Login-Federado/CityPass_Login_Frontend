@@ -1,6 +1,6 @@
 # Guía para agregar una pantalla o caso de uso
 
-Esta guía describe el flujo real del repositorio. No presupone que un endpoint existe: antes de programar una integración se debe comprobar el contrato backend.
+Esta guía describe el flujo real del repositorio. Antes de programar una integración se debe comprobar el contrato backend vigente.
 
 ## 1. Confirmar el contrato
 
@@ -9,22 +9,14 @@ Esta guía describe el flujo real del repositorio. No presupone que un endpoint 
 3. Acordar paginación, filtros y nombres antes de escribir el cliente.
 4. Añadir una prueba de contrato o, como mínimo, un test del cliente HTTP.
 
-Esta verificación es obligatoria porque actualmente hay divergencias conocidas:
-
-| Frontend actual | Backend actual |
-|---|---|
-| `/panel/people` | `/panel/personas` |
-| `/panel/groups` | `/panel/grupos` |
-| `/members` | `/miembros` |
-| módulos, administración global y bulk | sin endpoint |
-| forgot/reset/change password | sin endpoint |
+El contrato actual utiliza rutas inglesas (`/panel/people`, `/panel/groups`, `/members`) e incluye módulos, administración global, asignación masiva, auditoría, anomalías y operaciones de contraseña. Esta alineación no elimina la obligación de verificar OpenAPI/controller antes de agregar una operación nueva.
 
 No se debe copiar una ruta ilustrativa ni crear una interfaz imaginaria para “completar” una pantalla.
 
 ## 2. Elegir la feature
 
 - Login, sesión, JWT o contraseñas: `src/features/auth/`.
-- Personas, grupos o membresías: `src/features/systemManagement/`.
+- Personas, grupos, membresías, auditoría o anomalías: `src/features/systemManagement/`.
 - Cree otra carpeta en `src/features/` solo para un dominio nuevo.
 
 Las subcarpetas se agregan por necesidad. La estructura real es:
@@ -90,6 +82,9 @@ Use `axiosInstance` para endpoints protegidos. `authAxiosInstance` queda reserva
 - React Hook Form + Zod para formularios.
 - Estados visibles de carga, vacío, error y éxito.
 - Etiquetas, roles accesibles, foco y navegación por teclado.
+- Estados dinámicos anunciados con `role="status"` o `aria-live` cuando corresponda.
+- Presentación utilizable a 360 px sin ocultar acciones importantes detrás de scroll horizontal.
+- Respeto de `prefers-reduced-motion` para animaciones y transiciones nuevas.
 
 ## 7. Registrar la ruta
 
@@ -109,6 +104,9 @@ Coloque `.test.ts` o `.test.tsx` junto al código. Según el cambio, cubra:
 - cliente HTTP con método, ruta y payload exactos;
 - hook con `QueryClientProvider` aislado;
 - componente por comportamiento y roles accesibles;
+- chequeo axe para una pantalla o flujo principal;
+- foco y teclado cuando intervienen diálogos, menús o acciones destructivas;
+- viewport móvil de 360 px cuando se modifica layout o tablas;
 - routing con sesiones permitidas y rechazadas;
 - invalidación de todas las cachés afectadas.
 
@@ -129,4 +127,8 @@ Checklist:
 - [ ] La UI cubre loading, empty, error y success.
 - [ ] La autorización existe también en backend.
 - [ ] Los tests cubren contrato y comportamiento.
+- [ ] Axe no informa violaciones en el flujo afectado.
+- [ ] El flujo es operable con teclado y restaura el foco al cerrar overlays.
+- [ ] La interfaz conserva datos y acciones esenciales a 360 px.
+- [ ] Las animaciones respetan `prefers-reduced-motion`.
 - [ ] La cobertura global conserva el umbral de 60 %.

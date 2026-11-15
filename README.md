@@ -1,8 +1,8 @@
 # CityPass+ — Login Federado Frontend
 
-Aplicación web del Squad 2 para autenticación y administración de identidades de CityPass+. Implementa login, custodia de tokens en memoria, renovación automática y una interfaz de gestión de personas, grupos y membresías.
+Aplicación web del Squad 2 para autenticación y administración de identidades de CityPass+. Implementa login, recuperación y cambio de contraseña, custodia de tokens en memoria, renovación automática y una interfaz de gestión de personas, grupos, membresías, auditoría y eventos de anomalía.
 
-> Estado auditado: 14 de noviembre de 2026. Las pantallas y clientes HTTP se describen tal como están en el código; la compatibilidad incompleta con el backend se detalla abajo.
+> Estado verificado: 15 de noviembre de 2026. Las rutas y los DTO del frontend están alineados con el contrato vigente de `CityPass_Login_Backend`.
 
 ## Stack exacto
 
@@ -19,6 +19,7 @@ Aplicación web del Squad 2 para autenticación y administración de identidades
 | React Hook Form / Zod | 7.54.x / 3.24.x |
 | Tailwind CSS | 3.4.x |
 | Vitest / Testing Library | 2.1.x / React 16.1.x |
+| Accesibilidad automatizada | jest-axe 11.x |
 | Runtime OCI | Nginx 1.27 Alpine, usuario no root |
 
 Los rangos provienen de `package.json`; no existe `package-lock.json`, de modo que una instalación nueva no fija versiones transitivas exactas.
@@ -84,7 +85,7 @@ La organización es Feature-Driven:
 src/
 ├── components/ui/              # primitivas visuales compartidas
 ├── features/auth/              # login, refresh, logout, JWT y guards
-├── features/systemManagement/  # personas, grupos y membresías
+├── features/systemManagement/  # personas, grupos, auditoría y anomalías
 ├── lib/axios.ts                # interceptores y coordinación de refresh
 └── App.tsx                     # rutas y providers
 ```
@@ -93,7 +94,7 @@ src/
 - El cliente renueva 30 segundos antes del vencimiento y usa una única promesa de refresh para solicitudes concurrentes.
 - Un `401` protegido produce un solo refresh y reintento.
 - El frontend decodifica claims para navegación, pero no verifica la firma: el backend sigue siendo la frontera de autorización.
-- El panel exige `aud=citypass-admin-api`, `token_use=human`, `ver=1` y grupo `delegados`, salvo los roles de administrador general reconocidos solo por la UI.
+- El panel exige `aud=citypass-admin-api`, `token_use=human` y `ver=1`. Un delegado requiere grupo `delegados` y módulo; el backend representa al administrador general mediante el grupo `admin-global`. El cliente conserva compatibilidad con `admin_scope=GENERAL` y aliases históricos de roles globales.
 
 ## Rutas de UI
 
@@ -101,27 +102,56 @@ src/
 |---|---|
 | `/login` | operativa contra `POST /auth/login` |
 | `/home` | área autenticada básica |
-| `/panel`, `/panel/users`, `/panel/groups` | UI implementada; integración backend incompatible en varias rutas |
-| `/forgot-password`, `/reset-password` | UI implementada; endpoints backend ausentes |
+| `/panel` | gestión combinada de usuarios, grupos y membresías |
+| `/panel/users` | gestión exclusiva de usuarios |
+| `/panel/groups` | gestión exclusiva de grupos y asignaciones |
+| `/panel/audit` | historial administrativo paginado y filtrable |
+| `/panel/anomalies` | revisión y aprobación de accesos bloqueados por anomalías |
+| `/forgot-password` | solicitud pública de recuperación |
+| `/reset-password?token=…` | restablecimiento mediante enlace de recuperación |
+| `/reset-password` | cambio de contraseña para una sesión autenticada |
 | `/unauthorized` | feedback de autorización |
 
-## Contrato con el backend: estado auditado
+## Contrato con el backend
 
-La autenticación coincide en `POST /auth/login`, `POST /auth/refresh` y `POST /auth/logout`, incluidos los campos camelCase de request y snake_case de response.
+La autenticación y el panel consumen las rutas inglesas publicadas por el backend vigente. Las llamadas principales son:
 
-El panel no es interoperable en el estado actual:
-
-| Frontend solicita | Backend publica | Estado |
+| Método | Ruta | Uso en la interfaz |
 |---|---|---|
-| `/panel/people` | `/panel/personas` | incompatible |
-| `/panel/groups` | `/panel/grupos` | incompatible |
-| `/members` | `/miembros` | incompatible |
-| `/panel/modules` | — | ausente |
-| `/panel/admin/people`, `/panel/admin/groups` | — | ausente |
-| `/panel/group-memberships/bulk` | — | ausente |
-| `/auth/forgot-password`, `/auth/reset-password`, `/me/change-password` | — | ausentes |
+| `POST` | `/auth/login`, `/auth/refresh`, `/auth/logout` | sesión y renovación |
+| `POST` | `/auth/forgot-password`, `/auth/reset-password`, `/me/change-password` | recuperación y cambio de contraseña |
+| `GET` / `POST` / `PUT` | `/panel/people`, `/panel/people/{uid}` | listado, alta y modificación de personas |
+| `POST` | `/panel/people/{uid}/disable`, `/enable`, `/unlock` | estado LDAP y desbloqueo temporal |
+| `GET` | `/panel/admin/people`, `/panel/admin/groups` | vistas transversales del administrador general |
+| `GET` | `/panel/modules` | catálogo de módulos |
+| `GET` / `POST` / `DELETE` | `/panel/groups`, `/panel/groups/{name}` | gestión de grupos |
+| `POST` / `DELETE` | `/panel/groups/{name}/members[/{uid}]` | membresía individual |
+| `POST` | `/panel/group-memberships/bulk` | asignación masiva |
+| `GET` | `/panel/audit` | auditoría con filtros y paginación |
+| `GET` / `POST` | `/panel/anomaly-events`, `/panel/anomaly-events/{id}/approve` | revisión y aprobación de anomalías |
 
-Además, el frontend admite filtros, paginación y parámetro `module`; el backend devuelve listas completas y deriva el módulo exclusivamente del JWT. Hasta unificar el contrato, solo debe considerarse integrada la autenticación.
+Los listados admiten paginación y filtros. El alcance de módulo se deriva del token para delegados y se envía explícitamente cuando un administrador general opera sobre un módulo concreto.
+
+### Estados de cuenta y eventos de anomalía
+
+- `disabled` representa una cuenta deshabilitada en LDAP.
+- `locked` y `lockoutUntil` representan el bloqueo temporal por intentos fallidos.
+- La acción **Desbloquear cuenta** solo aparece para una persona con `locked=true`; no rehabilita LDAP ni aprueba un evento de anomalía.
+- La aprobación de anomalías habilita un único reintento acotado al contexto autorizado y actualiza las cachés de anomalías, personas y auditoría.
+
+## UX, responsive y accesibilidad
+
+- Las tablas de usuarios, grupos, auditoría y anomalías se presentan como fichas apiladas en pantallas pequeñas; los datos y acciones principales no requieren desplazamiento horizontal a 360 px.
+- Los estados de carga, vacío y paginación usan regiones `status`/`aria-live` para anunciar cambios dinámicos.
+- Los diálogos se construyen con Radix UI, administran foco inicial y retorno de foco, y se prueban junto con la navegación por teclado del menú de usuario.
+- `prefers-reduced-motion` desactiva animaciones y reduce transiciones globalmente; skeletons y spinners incluyen además utilidades `motion-reduce`.
+- `src/accessibility.test.tsx` ejecuta axe sobre login, usuarios, grupos, auditoría y anomalías.
+
+El diseño fue trabajado en Figma según la trazabilidad de Jira, pero este repositorio no contiene actualmente una URL pública o export verificable. Debe agregarse aquí cuando el equipo publique el artefacto.
+
+## Pruebas
+
+La suite verificada contiene **42 archivos y 195 pruebas**, incluidas pruebas de contrato HTTP, hooks, caché, routing, foco, teclado, viewport de 360 px y cinco verificaciones con axe. `vitest.config.ts` exige al menos 60 % en statements, branches, functions y lines.
 
 ## CI/CD
 
@@ -142,5 +172,6 @@ Con el backend seed, use `delegado-rec` / `changeit123` y `VITE_CLIENT_ID=citypa
 - `docs/guides/frontend-architecture.md`
 - `docs/guides/create-new-feature.md`
 - `docs/guides/style-guide.md`
+- `src/accessibility.test.tsx`
 - `docs/adr/`
 - Documentación integral y diagramas: carpeta `login-federado/docs/` del repositorio backend.
