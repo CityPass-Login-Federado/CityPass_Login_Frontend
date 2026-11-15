@@ -1,4 +1,5 @@
 import {
+  type AnomalyEventListParams,
   type AuditListParams,
   type GroupListParams,
   type PeopleListParams,
@@ -10,6 +11,9 @@ export const panelQueryKeys = {
   audit: () => [...panelQueryKeys.all, 'audit'] as const,
   auditList: (params: AuditListParams) =>
     [...panelQueryKeys.audit(), params] as const,
+  anomalyEvents: () => [...panelQueryKeys.all, 'anomaly-events'] as const,
+  anomalyEventsList: (params: AnomalyEventListParams) =>
+    [...panelQueryKeys.anomalyEvents(), params] as const,
   people: () => [...panelQueryKeys.all, 'people'] as const,
   peopleList: (params: PeopleListParams) =>
     [...panelQueryKeys.people(), params] as const,

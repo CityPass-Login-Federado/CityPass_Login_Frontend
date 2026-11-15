@@ -124,7 +124,7 @@ describe('system management utils', () => {
     ).toEqual({ content: ['z'], totalElements: 1, totalPages: 1, currentPage: 0, size: 10 });
   });
 
-  test('panelQueryKeys construye claves deterministas para personas y grupos', () => {
+  test('panelQueryKeys construye claves deterministas para los listados', () => {
     expect(panelQueryKeys.peopleList({ page: 0, size: 10 })).toEqual([
       'system-management',
       'people',
@@ -139,6 +139,17 @@ describe('system management utils', () => {
     expect(panelQueryKeys.modules()).toEqual([
       'system-management',
       'modules',
+    ]);
+    expect(
+      panelQueryKeys.anomalyEventsList({
+        page: 0,
+        size: 20,
+        status: 'BLOCKED',
+      }),
+    ).toEqual([
+      'system-management',
+      'anomaly-events',
+      { page: 0, size: 20, status: 'BLOCKED' },
     ]);
   });
 

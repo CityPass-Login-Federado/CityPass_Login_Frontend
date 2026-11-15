@@ -81,6 +81,39 @@ export interface AuditListParams {
   module?: string;
 }
 
+export type AnomalyEventStatus = 'BLOCKED' | 'APPROVED' | 'CONSUMED';
+
+export interface PanelAnomalyEvent {
+  id: string;
+  userSub: string;
+  username: string;
+  module: string;
+  clientId: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  riskScore: number;
+  reasons: string[];
+  status: AnomalyEventStatus;
+  blockedAt: string;
+  approvedAt: string | null;
+  approvalExpiresAt: string | null;
+  approvedBySub: string | null;
+  approvedByUid: string | null;
+  consumedAt: string | null;
+}
+
+export interface AnomalyEventListParams {
+  page: number;
+  size: number;
+  module?: string;
+  status?: AnomalyEventStatus;
+  username?: string;
+}
+
+export interface ApproveAnomalyEventVariables {
+  eventId: string;
+}
+
 export interface CreatePersonRequest {
   givenName: string;
   sn: string;

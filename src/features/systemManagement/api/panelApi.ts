@@ -1,6 +1,8 @@
 import { axiosInstance } from '@/lib/axios';
 
 import {
+  type AnomalyEventListParams,
+  type ApproveAnomalyEventVariables,
   type AssignUserToGroupRequest,
   type AuditListParams,
   type BulkMembershipRequest,
@@ -11,6 +13,7 @@ import {
   type GroupListParams,
   type MembershipChangeResponse,
   type PaginatedResponse,
+  type PanelAnomalyEvent,
   type PanelAuditEntry,
   type PanelGroup,
   type PanelPerson,
@@ -45,6 +48,26 @@ export const fetchAuditEntries = async (
   const response = await axiosInstance.get<PaginatedResponse<PanelAuditEntry>>(
     '/panel/audit',
     { params: withoutEmptyParams(params) },
+  );
+  return response.data;
+};
+
+export const fetchAnomalyEvents = async (
+  params: AnomalyEventListParams,
+): Promise<PaginatedResponse<PanelAnomalyEvent>> => {
+  const response = await axiosInstance.get<
+    PaginatedResponse<PanelAnomalyEvent>
+  >('/panel/anomaly-events', {
+    params: withoutEmptyParams(params),
+  });
+  return response.data;
+};
+
+export const approveAnomalyEvent = async ({
+  eventId,
+}: ApproveAnomalyEventVariables): Promise<PanelAnomalyEvent> => {
+  const response = await axiosInstance.post<PanelAnomalyEvent>(
+    `/panel/anomaly-events/${encodeURIComponent(eventId)}/approve`,
   );
   return response.data;
 };

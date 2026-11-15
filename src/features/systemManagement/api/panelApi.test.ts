@@ -4,10 +4,12 @@ import { axiosInstance } from '@/lib/axios';
 import {
   addUserToGroup,
   addUsersToGroups,
+  approveAnomalyEvent,
   createGroup,
   createPerson,
   deleteGroup,
   fetchAuditEntries,
+  fetchAnomalyEvents,
   fetchGroups,
   fetchModules,
   fetchPeople,
@@ -112,6 +114,75 @@ describe('panelApi', () => {
       },
     });
     expect(result).toEqual(response);
+  });
+
+  test('fetchAnomalyEvents envía los filtros y conserva la respuesta paginada', async () => {
+    const response = {
+      content: [
+        {
+          id: '9423464d-dc24-4bdf-b23a-c45c6bb64826',
+          userSub: 'U000042',
+          username: 'jperez',
+          module: 'reclamos',
+          clientId: 'citypass-admin-web',
+          ipAddress: '203.0.113.10',
+          userAgent: 'Mozilla/5.0',
+          riskScore: 0.93,
+          reasons: ['IP nueva'],
+          status: 'BLOCKED' as const,
+          blockedAt: '2026-11-15T12:30:00Z',
+          approvedAt: null,
+          approvalExpiresAt: null,
+          approvedBySub: null,
+          approvedByUid: null,
+          consumedAt: null,
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+      currentPage: 0,
+      size: 20,
+    };
+    const getSpy = vi
+      .spyOn(axiosInstance, 'get')
+      .mockResolvedValue({ data: response });
+
+    const result = await fetchAnomalyEvents({
+      page: 0,
+      size: 20,
+      module: 'reclamos',
+      status: 'BLOCKED',
+      username: '',
+    });
+
+    expect(getSpy).toHaveBeenCalledWith('/panel/anomaly-events', {
+      params: {
+        page: 0,
+        size: 20,
+        module: 'reclamos',
+        status: 'BLOCKED',
+      },
+    });
+    expect(result).toEqual(response);
+  });
+
+  test('approveAnomalyEvent aprueba el evento sin enviar body', async () => {
+    const approvedEvent = {
+      id: '9423464d-dc24-4bdf-b23a-c45c6bb64826',
+      status: 'APPROVED' as const,
+    };
+    const postSpy = vi
+      .spyOn(axiosInstance, 'post')
+      .mockResolvedValue({ data: approvedEvent });
+
+    const result = await approveAnomalyEvent({
+      eventId: '9423464d-dc24-4bdf-b23a-c45c6bb64826',
+    });
+
+    expect(postSpy).toHaveBeenCalledWith(
+      '/panel/anomaly-events/9423464d-dc24-4bdf-b23a-c45c6bb64826/approve',
+    );
+    expect(result).toEqual(approvedEvent);
   });
 
   test('fetchPeople usa un tamaño seguro cuando el size llega a 0', async () => {
