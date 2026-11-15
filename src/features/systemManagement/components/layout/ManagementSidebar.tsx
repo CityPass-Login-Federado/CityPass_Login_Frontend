@@ -1,4 +1,10 @@
-import { History, LayoutDashboard, Users, UsersRound } from 'lucide-react';
+import {
+  History,
+  LayoutDashboard,
+  ShieldAlert,
+  Users,
+  UsersRound,
+} from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const navigation = [
@@ -6,6 +12,12 @@ const navigation = [
   { id: 'groups', label: 'ABM de Grupos', to: '/panel/groups', icon: UsersRound },
   { id: 'users', label: 'ABM de Usuarios', to: '/panel/users', icon: Users },
   { id: 'audit', label: 'Auditoría', to: '/panel/audit', icon: History },
+  {
+    id: 'anomalies',
+    label: 'Anomalías',
+    to: '/panel/anomalies',
+    icon: ShieldAlert,
+  },
 ];
 
 const useActiveNavigationItem = () => {
@@ -14,6 +26,7 @@ const useActiveNavigationItem = () => {
   if (location.pathname === '/panel/users') return 'users';
   if (location.pathname === '/panel/groups') return 'groups';
   if (location.pathname === '/panel/audit') return 'audit';
+  if (location.pathname === '/panel/anomalies') return 'anomalies';
   return 'home';
 };
 

@@ -15,6 +15,7 @@ import { SystemManagementPage } from '@/features/systemManagement/pages/SystemMa
 import { GroupsManagementPage } from '@/features/systemManagement/pages/GroupsManagementPage';
 import { UsersManagementPage } from '@/features/systemManagement/pages/UsersManagementPage';
 import { AuditManagementPage } from '@/features/systemManagement/pages/AuditManagementPage';
+import { AnomalyManagementPage } from '@/features/systemManagement/pages/AnomalyManagementPage';
 import { queryClient } from '@/lib/queryClient';
 
 export const App = () => {
@@ -65,6 +66,14 @@ export const App = () => {
               element={
                 <AppErrorBoundary>
                   <AuditManagementPage />
+                </AppErrorBoundary>
+              }
+            />
+            <Route
+              path="/panel/anomalies"
+              element={
+                <AppErrorBoundary>
+                  <AnomalyManagementPage />
                 </AppErrorBoundary>
               }
             />

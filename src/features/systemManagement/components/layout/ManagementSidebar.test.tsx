@@ -45,4 +45,17 @@ describe('ManagementSidebar', () => {
     expect(auditLinks[0]).toHaveAttribute('href', '/panel/audit');
     expect(auditLinks[0]).toHaveAttribute('aria-current', 'page');
   });
+
+  test('navega a los eventos de anomalía y mantiene su opción activa', () => {
+    render(
+      <MemoryRouter initialEntries={['/panel/anomalies']}>
+        <ManagementSidebar />
+      </MemoryRouter>,
+    );
+
+    const anomalyLinks = screen.getAllByRole('link', { name: 'Anomalías' });
+    expect(anomalyLinks).toHaveLength(2);
+    expect(anomalyLinks[0]).toHaveAttribute('href', '/panel/anomalies');
+    expect(anomalyLinks[0]).toHaveAttribute('aria-current', 'page');
+  });
 });

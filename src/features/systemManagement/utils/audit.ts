@@ -11,6 +11,7 @@ export const AUDIT_ACTION_OPTIONS = [
   { value: 'MEMBER_ADDED', label: 'Miembro agregado' },
   { value: 'MEMBER_REMOVED', label: 'Miembro quitado' },
   { value: 'LOGIN_LOCKOUT_CLEARED', label: 'Cuenta desbloqueada' },
+  { value: 'ANOMALY_EVENT_APPROVED', label: 'Anomalía aprobada' },
 ] as const;
 
 const auditActionLabels = new Map<string, string>(
