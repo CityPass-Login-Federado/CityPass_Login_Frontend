@@ -34,7 +34,10 @@ export const UserHomePage = () => {
           onClick={() => logoutMutation.mutate()}
         >
           {logoutMutation.isPending ? (
-            <LoaderCircle className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            <LoaderCircle
+              className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
           ) : (
             <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
           )}

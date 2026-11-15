@@ -18,7 +18,7 @@ export const AuthLayout = ({ children }: AuthLayoutProps) => {
         />
       </div>
 
-      <div className="flex flex-col items-center justify-center bg-background px-8 py-12 lg:px-16">
+      <div className="flex flex-col items-center justify-center bg-background px-4 py-10 sm:px-8 sm:py-12 lg:px-16">
         <div className="w-full max-w-md space-y-8">
           <div className="flex justify-center">
             <img src={citypassLogo} alt="CityPass+" className="h-16 w-auto" />

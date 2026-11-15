@@ -36,7 +36,7 @@ const NavigationLinks = ({ compact = false }: { compact?: boolean }) => {
   return (
     <nav
       aria-label="Navegación administrativa"
-      className={compact ? 'flex min-w-max gap-2' : 'space-y-1'}
+      className={compact ? 'grid grid-cols-2 gap-2 min-[420px]:grid-cols-3' : 'space-y-1'}
     >
       {navigation.map((item) => {
         const Icon = item.icon;
@@ -52,7 +52,7 @@ const NavigationLinks = ({ compact = false }: { compact?: boolean }) => {
                 : 'flex items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white'
             }
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
             {item.label}
           </Link>
         );
@@ -74,7 +74,7 @@ export const ManagementSidebar = () => (
       <NavigationLinks />
     </aside>
 
-    <div className="overflow-x-auto bg-slate-950 px-4 py-3 text-white md:hidden">
+    <div className="bg-slate-950 px-4 py-3 text-white md:hidden">
       <NavigationLinks compact />
     </div>
   </>

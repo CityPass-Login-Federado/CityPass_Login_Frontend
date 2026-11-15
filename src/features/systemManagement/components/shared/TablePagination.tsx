@@ -31,7 +31,7 @@ export const TablePagination = ({
 
   return (
     <div className="flex flex-col gap-3 border-t px-1 pt-4 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-      <p>
+      <p role="status" aria-live="polite" aria-atomic="true">
         Mostrando {firstItem}–{lastItem} de {totalElements} {itemLabel}
       </p>
       <nav aria-label={`Paginación de ${itemLabel}`} className="flex gap-1">
@@ -44,7 +44,7 @@ export const TablePagination = ({
           disabled={currentPage <= 0}
           aria-label="Página anterior"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
         </Button>
         {visiblePages.map((page) => (
           <Button
@@ -69,7 +69,7 @@ export const TablePagination = ({
           disabled={currentPage >= totalPages - 1 || totalPages === 0}
           aria-label="Página siguiente"
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </Button>
       </nav>
     </div>

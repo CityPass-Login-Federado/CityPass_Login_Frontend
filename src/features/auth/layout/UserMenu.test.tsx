@@ -102,6 +102,28 @@ describe('UserMenu', () => {
     expect(await screen.findByText('Cambio de contraseña')).toBeInTheDocument();
   });
 
+  test('permite recorrer el menú con teclado y devuelve el foco al cerrarlo', async () => {
+    const user = userEvent.setup();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    renderUserMenu(queryClient);
+
+    const trigger = screen.getByRole('button', {
+      name: 'Abrir menú de usuario',
+    });
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+
+    expect(
+      screen.getByRole('menuitem', { name: 'Cambiar contraseña' }),
+    ).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('menuitem', { name: 'Cerrar sesión' })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveFocus();
+  });
+
   test('revoca el token, limpia la sesión y redirige al login', async () => {
     const user = userEvent.setup();
     const queryClient = new QueryClient({

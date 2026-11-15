@@ -71,7 +71,10 @@ export const UserMenu = () => {
       >
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
           {logoutMutation.isPending ? (
-            <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+            <LoaderCircle
+              className="h-4 w-4 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
           ) : (
             <UserRound className="h-4 w-4" aria-hidden="true" />
           )}
@@ -86,7 +89,7 @@ export const UserMenu = () => {
         </span>
         <ChevronDown
           aria-hidden="true"
-          className={`h-4 w-4 text-muted-foreground transition-transform ${
+          className={`h-4 w-4 text-muted-foreground transition-transform motion-reduce:transition-none ${
             isOpen ? 'rotate-180' : ''
           }`}
         />
