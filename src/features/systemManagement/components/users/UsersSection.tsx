@@ -157,7 +157,7 @@ export const UsersSection = ({
   };
 
   const handleUnlock = () => {
-    if (!unlockPerson) return;
+    if (!unlockPerson?.locked) return;
 
     unlockMutation.mutate(
       {

@@ -42,7 +42,7 @@ export const LoginForm = () => {
       <div className="space-y-8">
         <div className="space-y-2 text-center">
           <h1 className="font-heading text-3xl font-bold text-foreground">
-            Ingrese a su cuenta
+            Ingresá a tu cuenta
           </h1>
           <p className="text-sm text-muted-foreground">
             Plataforma de Servicios Urbanos Inteligentes
@@ -120,7 +120,7 @@ export const LoginForm = () => {
               size="lg"
               disabled={isPending}
             >
-              {isPending ? 'Ingresando...' : 'Ingresar'}
+              {isPending ? 'Ingresando…' : 'Ingresar'}
             </Button>
         </form>
       </div>

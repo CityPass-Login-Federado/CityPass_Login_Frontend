@@ -79,7 +79,7 @@ describe('UserMenu', () => {
 
     expect(screen.getByRole('menu', { name: 'Opciones de usuario' })).toBeVisible();
     expect(
-      screen.getByRole('menuitem', { name: 'Restablecer contraseña' }),
+      screen.getByRole('menuitem', { name: 'Cambiar contraseña' }),
     ).toBeVisible();
     expect(screen.getByRole('menuitem', { name: 'Cerrar sesión' })).toBeVisible();
     expect(screen.getAllByText('Admin General')).toHaveLength(2);
@@ -96,10 +96,32 @@ describe('UserMenu', () => {
       screen.getByRole('button', { name: 'Abrir menú de usuario' }),
     );
     await user.click(
-      screen.getByRole('menuitem', { name: 'Restablecer contraseña' }),
+      screen.getByRole('menuitem', { name: 'Cambiar contraseña' }),
     );
 
     expect(await screen.findByText('Cambio de contraseña')).toBeInTheDocument();
+  });
+
+  test('permite recorrer el menú con teclado y devuelve el foco al cerrarlo', async () => {
+    const user = userEvent.setup();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    renderUserMenu(queryClient);
+
+    const trigger = screen.getByRole('button', {
+      name: 'Abrir menú de usuario',
+    });
+    trigger.focus();
+    await user.keyboard('{ArrowDown}');
+
+    expect(
+      screen.getByRole('menuitem', { name: 'Cambiar contraseña' }),
+    ).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('menuitem', { name: 'Cerrar sesión' })).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(trigger).toHaveFocus();
   });
 
   test('revoca el token, limpia la sesión y redirige al login', async () => {

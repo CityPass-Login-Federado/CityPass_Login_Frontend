@@ -67,7 +67,7 @@ describe('LoginForm Component', () => {
 
   test('renderiza el formulario correctamente', () => {
     renderLoginForm();
-    expect(screen.getByRole('heading', { name: /ingrese a su cuenta/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /ingresá a tu cuenta/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/usuario/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /ingresar/i })).toBeInTheDocument();
@@ -152,7 +152,7 @@ describe('LoginForm Component', () => {
     renderLoginForm();
 
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'Error al iniciar sesión. Intente nuevamente.',
+      'Error al iniciar sesión. Intentá nuevamente.',
     );
   });
 });

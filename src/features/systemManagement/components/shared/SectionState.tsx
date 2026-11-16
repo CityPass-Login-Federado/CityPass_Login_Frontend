@@ -3,9 +3,15 @@ import { AlertCircle, Inbox } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export const SectionLoading = () => (
-  <div aria-label="Cargando" className="space-y-2 py-3">
+  <div
+    role="status"
+    aria-live="polite"
+    aria-label="Cargando"
+    className="space-y-2 py-3"
+  >
+    <span className="sr-only">Cargando datos…</span>
     {Array.from({ length: 5 }, (_, index) => (
-      <Skeleton key={index} className="h-11 w-full" />
+      <Skeleton key={index} className="h-11 w-full" aria-hidden="true" />
     ))}
   </div>
 );
@@ -21,8 +27,12 @@ export const SectionError = ({ message }: { message: string }) => (
 );
 
 export const SectionEmpty = ({ message }: { message: string }) => (
-  <div className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-6 text-center text-muted-foreground">
-    <Inbox className="h-6 w-6" />
+  <div
+    role="status"
+    aria-live="polite"
+    className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-6 text-center text-muted-foreground"
+  >
+    <Inbox className="h-6 w-6" aria-hidden="true" />
     <p className="text-sm">{message}</p>
   </div>
 );

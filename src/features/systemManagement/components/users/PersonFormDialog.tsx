@@ -102,7 +102,7 @@ export const PersonFormDialog = ({
 
   const handleFormSubmit = (values: PersonFormValues) => {
     if (isGeneralAdmin && !values.module) {
-      setError('module', { message: 'Seleccione un módulo' });
+      setError('module', { message: 'Seleccioná un módulo' });
       return;
     }
 
@@ -172,7 +172,7 @@ export const PersonFormDialog = ({
           <DialogDescription>
             {isEditing
               ? 'Actualice los datos habilitados para esta identidad.'
-              : 'Complete los datos para crear una identidad en su módulo.'}
+              : 'Completá los datos para crear una identidad en tu módulo.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -209,7 +209,7 @@ export const PersonFormDialog = ({
                           placeholder={
                             isModulesLoading
                               ? 'Cargando módulos…'
-                              : 'Seleccione un módulo'
+                              : 'Seleccioná un módulo'
                           }
                         />
                       </SelectTrigger>

@@ -76,6 +76,8 @@ const stalePerson: PanelPerson = {
   sn: 'Anterior',
   email: 'anterior@citypass.local',
   disabled: false,
+  locked: true,
+  lockoutUntil: '2026-11-15T15:30:00Z',
   module: 'reclamos',
 };
 

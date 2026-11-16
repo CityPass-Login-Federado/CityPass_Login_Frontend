@@ -1,4 +1,10 @@
-import { History, LayoutDashboard, Users, UsersRound } from 'lucide-react';
+import {
+  History,
+  LayoutDashboard,
+  ShieldAlert,
+  Users,
+  UsersRound,
+} from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const navigation = [
@@ -6,6 +12,12 @@ const navigation = [
   { id: 'groups', label: 'ABM de Grupos', to: '/panel/groups', icon: UsersRound },
   { id: 'users', label: 'ABM de Usuarios', to: '/panel/users', icon: Users },
   { id: 'audit', label: 'Auditoría', to: '/panel/audit', icon: History },
+  {
+    id: 'anomalies',
+    label: 'Anomalías',
+    to: '/panel/anomalies',
+    icon: ShieldAlert,
+  },
 ];
 
 const useActiveNavigationItem = () => {
@@ -14,6 +26,7 @@ const useActiveNavigationItem = () => {
   if (location.pathname === '/panel/users') return 'users';
   if (location.pathname === '/panel/groups') return 'groups';
   if (location.pathname === '/panel/audit') return 'audit';
+  if (location.pathname === '/panel/anomalies') return 'anomalies';
   return 'home';
 };
 
@@ -23,7 +36,7 @@ const NavigationLinks = ({ compact = false }: { compact?: boolean }) => {
   return (
     <nav
       aria-label="Navegación administrativa"
-      className={compact ? 'flex min-w-max gap-2' : 'space-y-1'}
+      className={compact ? 'grid grid-cols-2 gap-2 min-[420px]:grid-cols-3' : 'space-y-1'}
     >
       {navigation.map((item) => {
         const Icon = item.icon;
@@ -39,7 +52,7 @@ const NavigationLinks = ({ compact = false }: { compact?: boolean }) => {
                 : 'flex items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white'
             }
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
             {item.label}
           </Link>
         );
@@ -61,7 +74,7 @@ export const ManagementSidebar = () => (
       <NavigationLinks />
     </aside>
 
-    <div className="overflow-x-auto bg-slate-950 px-4 py-3 text-white md:hidden">
+    <div className="bg-slate-950 px-4 py-3 text-white md:hidden">
       <NavigationLinks compact />
     </div>
   </>

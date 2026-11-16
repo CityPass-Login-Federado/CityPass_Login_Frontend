@@ -124,7 +124,7 @@ describe('system management utils', () => {
     ).toEqual({ content: ['z'], totalElements: 1, totalPages: 1, currentPage: 0, size: 10 });
   });
 
-  test('panelQueryKeys construye claves deterministas para personas y grupos', () => {
+  test('panelQueryKeys construye claves deterministas para los listados', () => {
     expect(panelQueryKeys.peopleList({ page: 0, size: 10 })).toEqual([
       'system-management',
       'people',
@@ -139,6 +139,17 @@ describe('system management utils', () => {
     expect(panelQueryKeys.modules()).toEqual([
       'system-management',
       'modules',
+    ]);
+    expect(
+      panelQueryKeys.anomalyEventsList({
+        page: 0,
+        size: 20,
+        status: 'BLOCKED',
+      }),
+    ).toEqual([
+      'system-management',
+      'anomaly-events',
+      { page: 0, size: 20, status: 'BLOCKED' },
     ]);
   });
 
@@ -161,7 +172,7 @@ describe('system management utils', () => {
 
   test('hooks de people y groups respetan el flag enabled sin ejecutar queries en deshabilitado', async () => {
     vi.mocked(fetchPeople).mockResolvedValue({
-      content: [{ uid: 'u1', employeeNumber: 'E1', givenName: 'Ana', sn: 'Lopez', email: 'ana@example.com', disabled: false }],
+      content: [{ uid: 'u1', employeeNumber: 'E1', givenName: 'Ana', sn: 'Lopez', email: 'ana@example.com', disabled: false, locked: false, lockoutUntil: null }],
       totalElements: 1,
       totalPages: 1,
       currentPage: 0,

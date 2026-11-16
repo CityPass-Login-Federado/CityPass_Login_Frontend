@@ -24,8 +24,10 @@ src/
 │   │   ├── store/             # Sesión compartida con Zustand
 │   │   ├── types/             # DTO y claims
 │   │   └── utils/             # JWT, validación y errores
-│   └── systemManagement/      # Administración de usuarios y grupos
+│   └── systemManagement/      # Administración, auditoría y anomalías
 │       ├── components/
+│       │   ├── anomalies/     # Revisión y aprobación de anomalías
+│       │   ├── audit/         # Historial administrativo
 │       │   ├── groups/        # Componentes propios de grupos
 │       │   ├── layout/        # Layout y navegación del panel
 │       │   ├── shared/        # Componentes comunes del dominio
@@ -87,12 +89,14 @@ Las rutas actuales son:
 |---|---|---|
 | `/login` | Público | `LoginPage` |
 | `/forgot-password` | Público | `ForgotPasswordPage` |
-| `/reset-password` | Público | `PasswordResetPage` |
+| `/reset-password` | Público con token / autenticado sin token | `PasswordResetPage` |
 | `/unauthorized` | Público | `UnauthorizedPage` |
 | `/home` | Autenticado | `UserHomePage` |
 | `/panel` | Protegido | `SystemManagementPage` |
 | `/panel/users` | Protegido | `UsersManagementPage` |
 | `/panel/groups` | Protegido | `GroupsManagementPage` |
+| `/panel/audit` | Protegido | `AuditManagementPage` |
+| `/panel/anomalies` | Protegido | `AnomalyManagementPage` |
 
 Cualquier ruta desconocida redirige a `/login`. Para agregar una pantalla nueva se debe registrar su ruta en `App.tsx`; actualmente no existe un archivo `AppRouter.tsx` separado.
 
@@ -170,18 +174,20 @@ Estas verificaciones controlan la experiencia de navegación. No reemplazan los 
 
 Un cambio o restablecimiento exitoso de contraseña también limpia la sesión y exige una nueva autenticación.
 
-> Estado de integración: `/auth/forgot-password`, `/auth/reset-password` y `/me/change-password` están implementados en el cliente, pero no existen en el backend auditado.
+Los tres endpoints de contraseña están integrados con el backend. La interfaz reserva “Restablecer contraseña” para el flujo público con token y utiliza “Cambiar contraseña” cuando existe una sesión autenticada.
 
 ## 4. Feature de administración del sistema
 
-La administración de usuarios, grupos y membresías vive en `src/features/systemManagement/`.
+La administración de usuarios, grupos, membresías, auditoría y anomalías vive en `src/features/systemManagement/`.
 
 ```text
 systemManagement/
 ├── api/
 │   └── panelApi.ts              # Todas las llamadas del panel
-├── components/                  # Páginas, secciones, tablas, filtros y diálogos
+├── components/                  # Usuarios, grupos, auditoría, anomalías y layout
 ├── hooks/
+│   ├── useAnomalyEvents.ts      # Eventos bloqueados y aprobación
+│   ├── useAudit.ts              # Historial administrativo
 │   ├── usePeople.ts             # Consultas y mutaciones de usuarios
 │   ├── useGroups.ts             # Consultas y mutaciones de grupos
 │   ├── useModules.ts            # Catálogo de módulos expuesto por el backend
@@ -203,28 +209,29 @@ systemManagement/
 
 - Las páginas `*ManagementPage` obtienen la sesión necesaria y componen el layout.
 - `ManagementPageLayout` contiene la estructura compartida, la navegación lateral y el menú del usuario.
-- `UsersSection` y `GroupsSection` coordinan filtros, paginación, consultas y diálogos.
-- `UsersTable` y `GroupsTable` se ocupan de presentar filas y acciones.
-- La vista de administrador global intenta obtener módulos desde `GET /panel/modules`; ese endpoint no existe todavía en el backend auditado.
+- `UsersSection`, `GroupsSection`, `AuditSection` y `AnomalySection` coordinan filtros, paginación, consultas y diálogos.
+- Las tablas del dominio presentan filas desde `sm` y fichas apiladas en móvil mediante la misma estructura semántica.
+- La vista de administrador global obtiene módulos desde `GET /panel/modules` y usa las vistas transversales `/panel/admin/people` y `/panel/admin/groups`.
 - Los componentes `*Dialog` contienen formularios o confirmaciones específicas.
 - `SectionState` y `TablePagination` resuelven estados visuales reutilizados por ambas secciones.
 
 Los componentes de `systemManagement` pueden consumir sesión y permisos desde `auth`. Esa dependencia es intencional; las features están separadas por responsabilidad, pero no son micro-frontends independientes.
 
-### Compatibilidad real con el backend
+### Contrato vigente con el backend
 
-La feature está implementada y probada con mocks, pero su contrato no coincide con el backend actual:
+El cliente consume el contrato inglés publicado por Spring Boot:
 
-| Cliente frontend | Backend Spring Boot |
+| Área | Rutas principales |
 |---|---|
-| `/panel/people` | `/panel/personas` |
-| `/panel/groups` | `/panel/grupos` |
-| `/members` | `/miembros` |
-| `/panel/modules` | ausente |
-| `/panel/admin/people`, `/panel/admin/groups` | ausentes |
-| `/panel/group-memberships/bulk` | ausente |
+| Personas | `/panel/people`, `/panel/people/{uid}`, `/panel/admin/people` |
+| Estado de cuenta | `/panel/people/{uid}/disable`, `/enable`, `/unlock` |
+| Grupos | `/panel/groups`, `/panel/groups/{name}`, `/panel/admin/groups` |
+| Membresías | `/panel/groups/{name}/members[/{uid}]`, `/panel/group-memberships/bulk` |
+| Catálogo | `/panel/modules` |
+| Auditoría | `/panel/audit` |
+| Anomalías | `/panel/anomaly-events`, `/panel/anomaly-events/{id}/approve` |
 
-El frontend envía filtros, paginación y `module`; el backend devuelve listas y deriva el módulo exclusivamente del JWT. Esta brecha debe resolverse mediante un contrato OpenAPI único antes de considerar el panel integrado.
+Los listados aceptan filtros, página, tamaño y módulo según el alcance. `PanelPerson` diferencia la baja LDAP (`disabled`) del lockout temporal (`locked`, `lockoutUntil`). Las pruebas de `panelApi` verifican método, ruta, parámetros y cuerpo de las operaciones consumidas.
 
 ## 5. Flujo de datos del panel
 
@@ -252,6 +259,8 @@ Después de crear o modificar datos, los hooks invalidan las consultas relaciona
 
 - cambios exclusivos de grupos invalidan `groups`;
 - cambios de usuarios o membresías invalidan `people` y `groups`;
+- un desbloqueo invalida `people` y `audit`;
+- una aprobación invalida `anomalyEvents`, `people` y `audit`;
 - la reconciliación se ejecuta en `onSettled`, para volver a consultar incluso si la respuesta fue incierta.
 
 La lógica está centralizada en `cacheReconciliation.ts`. Si se agrega una entidad nueva, también se deben definir sus query keys y su estrategia de invalidación.
@@ -282,6 +291,16 @@ Los estilos se construyen principalmente con clases de Tailwind:
 
 El uso de primitivas de Radix aporta comportamientos accesibles de base, pero cada pantalla debe conservar etiquetas, foco, navegación por teclado, contraste y mensajes de error adecuados.
 
+Las decisiones responsive y de accesibilidad verificadas son:
+
+- tablas transformadas en fichas apiladas en móvil, con acciones textuales visibles y sin scroll horizontal a 360 px;
+- navegación administrativa móvil en grilla;
+- estados dinámicos anunciados mediante `role="status"` y `aria-live`;
+- foco inicial y retorno de foco de diálogos verificados con Testing Library;
+- navegación por teclado del menú de usuario;
+- reducción global de movimiento con `prefers-reduced-motion` y utilidades `motion-reduce`;
+- chequeos axe de login, usuarios, grupos, auditoría y anomalías.
+
 ## 8. Dónde realizar cada cambio
 
 | Si necesitás... | Empezá por... | Revisá también... |
@@ -294,6 +313,8 @@ El uso de primitivas de Radix aporta comportamientos accesibles de base, pero ca
 | Agregar un endpoint del panel | `systemManagement/api/panelApi.ts` | tipos, hooks, query keys e invalidación |
 | Cambiar la lista de usuarios | `UsersSection.tsx` | `UsersTable.tsx`, `UserFilters.tsx` y `usePeople.ts` |
 | Cambiar la lista de grupos | `GroupsSection.tsx` | `GroupsTable.tsx`, `GroupFilters.tsx` y `useGroups.ts` |
+| Cambiar auditoría | `AuditSection.tsx` | `AuditTable.tsx`, `AuditFilters.tsx` y `useAudit.ts` |
+| Cambiar anomalías | `AnomalySection.tsx` | `AnomalyTable.tsx`, `AnomalyFilters.tsx` y `useAnomalyEvents.ts` |
 | Cambiar un formulario del panel | componente `*Dialog.tsx` | `systemManagementSchemas.ts` y hook de mutación |
 | Agregar estado remoto | hook de la feature | `queryKeys.ts` y `cacheReconciliation.ts` |
 | Agregar estado compartido del cliente | store de la feature | confirmar que no sea estado remoto ni local |
@@ -320,7 +341,7 @@ Si el caso de uso pertenece a un dominio nuevo, se crea una carpeta dentro de `s
 
 Vitest y React Testing Library cubren componentes, hooks y utilidades. Los tests se colocan junto al código probado con el sufijo `.test.ts` o `.test.tsx`.
 
-El árbol auditado contiene 32 archivos de test y 143 declaraciones `it`/`test`. `vitest.config.ts` exige 60 % en statements, branches, functions y lines; el repositorio no incluye un reporte de cobertura versionado.
+La suite verificada el 15 de noviembre de 2026 contiene 42 archivos y 195 pruebas. `vitest.config.ts` exige 60 % en statements, branches, functions y lines; el repositorio no incluye un reporte de cobertura versionado.
 
 Las pruebas suelen dividirse en:
 
@@ -328,7 +349,9 @@ Las pruebas suelen dividirse en:
 - componentes mediante comportamiento visible y roles accesibles;
 - hooks mediante providers aislados de TanStack Query;
 - APIs mediante mocks del cliente HTTP;
-- routing y permisos mediante sesiones controladas.
+- routing y permisos mediante sesiones controladas;
+- accesibilidad con axe, gestión de foco y navegación mediante teclado;
+- comportamiento responsive de las tablas en un viewport de 360 px.
 
 La configuración global está en `vitest.config.ts` y `src/tests/setup.ts`.
 

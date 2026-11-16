@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, test } from 'vitest';
 
 import {
@@ -84,5 +85,64 @@ describe('ui wrapper coverage', () => {
     render(<Toaster toastOptions={{ classNames: { toast: 'custom-toast' } }} />);
 
     expect(document.body).toBeTruthy();
+  });
+
+  test('dialog mueve el foco al contenido y lo devuelve al disparador', async () => {
+    const user = userEvent.setup();
+    render(
+      <Dialog>
+        <DialogTrigger>Abrir formulario</DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar datos</DialogTitle>
+            <DialogDescription>Actualizá la información.</DialogDescription>
+          </DialogHeader>
+          <label htmlFor="focus-name">Nombre</label>
+          <input id="focus-name" />
+          <DialogFooter>
+            <DialogClose>Guardar y cerrar</DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>,
+    );
+
+    const trigger = screen.getByRole('button', { name: 'Abrir formulario' });
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(screen.getByLabelText('Nombre')).toHaveFocus(),
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'Guardar y cerrar' }),
+    );
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
+  test('alert dialog enfoca la acción segura y restaura el foco al cancelar', async () => {
+    const user = userEvent.setup();
+    render(
+      <AlertDialog>
+        <AlertDialogTrigger>Eliminar elemento</AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar eliminación</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción requiere confirmación.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>,
+    );
+
+    const trigger = screen.getByRole('button', { name: 'Eliminar elemento' });
+    await user.click(trigger);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Cancelar' })).toHaveFocus(),
+    );
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() => expect(trigger).toHaveFocus());
   });
 });

@@ -21,7 +21,7 @@ export const useForgotPassword = () =>
     mutationFn: requestPasswordReset,
   });
 
-const useReturnToLoginAfterPasswordChange = () => {
+const useReturnToLoginAfterPasswordChange = (successMessage: string) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const clearSession = useAuthStore((state) => state.clearSession);
@@ -29,13 +29,15 @@ const useReturnToLoginAfterPasswordChange = () => {
   return () => {
     queryClient.clear();
     clearSession();
-    toast.success('Contraseña actualizada. Iniciá sesión nuevamente.');
+    toast.success(successMessage);
     navigate('/login', { replace: true });
   };
 };
 
 export const useResetPassword = () => {
-  const returnToLogin = useReturnToLoginAfterPasswordChange();
+  const returnToLogin = useReturnToLoginAfterPasswordChange(
+    'Contraseña restablecida. Iniciá sesión nuevamente.',
+  );
 
   return useMutation<void, AxiosError<ApiError>, ResetPasswordRequest>({
     mutationFn: resetPassword,
@@ -44,7 +46,9 @@ export const useResetPassword = () => {
 };
 
 export const useChangePassword = () => {
-  const returnToLogin = useReturnToLoginAfterPasswordChange();
+  const returnToLogin = useReturnToLoginAfterPasswordChange(
+    'Contraseña cambiada. Iniciá sesión nuevamente.',
+  );
 
   return useMutation<void, AxiosError<ApiError>, ChangePasswordRequest>({
     mutationFn: changePassword,

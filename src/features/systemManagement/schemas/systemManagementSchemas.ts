@@ -14,7 +14,7 @@ export const personFormSchema = z.object({
   givenName: z.string().trim().min(1, 'El nombre es obligatorio'),
   sn: z.string().trim().min(1, 'El apellido es obligatorio'),
   username: usernameSchema,
-  email: z.string().trim().email('Ingrese un email válido'),
+  email: z.string().trim().email('Ingresá un email válido'),
   temporaryPassword: z
     .string()
     .refine(
@@ -40,8 +40,8 @@ export const groupFormSchema = z.object({
 export type GroupFormValues = z.infer<typeof groupFormSchema>;
 
 export const assignmentFormSchema = z.object({
-  memberUids: z.array(z.string()).min(1, 'Seleccione al menos un usuario'),
-  groupNames: z.array(z.string()).min(1, 'Seleccione al menos un grupo'),
+  memberUids: z.array(z.string()).min(1, 'Seleccioná al menos un usuario'),
+  groupNames: z.array(z.string()).min(1, 'Seleccioná al menos un grupo'),
 }).superRefine(({ memberUids, groupNames }, context) => {
   const assignments = memberUids.length * groupNames.length;
   if (assignments > 1000) {
