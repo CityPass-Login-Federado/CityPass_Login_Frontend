@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   History,
   LayoutDashboard,
   ShieldAlert,
@@ -6,6 +7,11 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+
+import {
+  selectCanAccessAnalytics,
+  useAuthStore,
+} from '@/features/auth/store/useAuthStore';
 
 const navigation = [
   { id: 'home', label: 'Inicio', to: '/panel', icon: LayoutDashboard },
@@ -18,6 +24,13 @@ const navigation = [
     to: '/panel/anomalies',
     icon: ShieldAlert,
   },
+  {
+    id: 'analytics',
+    label: 'Analítica',
+    to: '/panel/analitica',
+    icon: BarChart3,
+    globalOnly: true,
+  },
 ];
 
 const useActiveNavigationItem = () => {
@@ -27,11 +40,13 @@ const useActiveNavigationItem = () => {
   if (location.pathname === '/panel/groups') return 'groups';
   if (location.pathname === '/panel/audit') return 'audit';
   if (location.pathname === '/panel/anomalies') return 'anomalies';
+  if (location.pathname === '/panel/analitica') return 'analytics';
   return 'home';
 };
 
 const NavigationLinks = ({ compact = false }: { compact?: boolean }) => {
   const activeItem = useActiveNavigationItem();
+  const canAccessAnalytics = useAuthStore(selectCanAccessAnalytics);
 
   return (
     <nav
@@ -39,6 +54,8 @@ const NavigationLinks = ({ compact = false }: { compact?: boolean }) => {
       className={compact ? 'grid grid-cols-2 gap-2 min-[420px]:grid-cols-3' : 'space-y-1'}
     >
       {navigation.map((item) => {
+        if (item.globalOnly && !canAccessAnalytics) return null;
+
         const Icon = item.icon;
         const isActive = item.id === activeItem;
         return (
@@ -63,7 +80,7 @@ const NavigationLinks = ({ compact = false }: { compact?: boolean }) => {
 
 export const ManagementSidebar = () => (
   <>
-    <aside className="hidden min-h-screen w-56 shrink-0 bg-slate-950 px-4 py-7 text-white md:block">
+    <aside className="hidden h-full w-56 shrink-0 overflow-y-auto bg-slate-950 px-4 py-7 text-white md:block">
       <div className="border-b border-white/10 px-1 pb-6">
         <div className="font-heading text-xl font-bold">CityPass+</div>
         <p className="mt-1 text-xs text-slate-400">Portal de Administración</p>

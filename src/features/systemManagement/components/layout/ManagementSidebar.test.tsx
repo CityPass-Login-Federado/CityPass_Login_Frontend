@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
+import { useAuthStore } from '@/features/auth/store/useAuthStore';
+
 import { ManagementSidebar } from './ManagementSidebar';
 
 describe('ManagementSidebar', () => {
@@ -57,5 +59,53 @@ describe('ManagementSidebar', () => {
     expect(anomalyLinks).toHaveLength(2);
     expect(anomalyLinks[0]).toHaveAttribute('href', '/panel/anomalies');
     expect(anomalyLinks[0]).toHaveAttribute('aria-current', 'page');
+  });
+
+  test('muestra Analítica activa únicamente para admin-global', () => {
+    useAuthStore.setState({
+      session: {
+        userId: 'u-global',
+        username: 'admin-global',
+        groups: ['admin-global'],
+        roles: [],
+        adminScope: 'GENERAL',
+        expiresAt: Date.now() + 60_000,
+      },
+      isHydrated: true,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/panel/analitica']}>
+        <ManagementSidebar />
+      </MemoryRouter>,
+    );
+
+    const analyticsLinks = screen.getAllByRole('link', { name: 'Analítica' });
+    expect(analyticsLinks).toHaveLength(2);
+    expect(analyticsLinks[0]).toHaveAttribute('href', '/panel/analitica');
+    expect(analyticsLinks[0]).toHaveAttribute('aria-current', 'page');
+  });
+
+  test('oculta Analítica para un delegado de módulo', () => {
+    useAuthStore.setState({
+      session: {
+        userId: 'u-delegate',
+        username: 'delegado',
+        module: 'reclamos',
+        groups: ['delegados'],
+        roles: [],
+        adminScope: 'MODULE',
+        expiresAt: Date.now() + 60_000,
+      },
+      isHydrated: true,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/panel']}>
+        <ManagementSidebar />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole('link', { name: 'Analítica' })).not.toBeInTheDocument();
   });
 });

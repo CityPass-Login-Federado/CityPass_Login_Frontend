@@ -43,6 +43,11 @@ export const useAuthStore = create<AuthState>((set) => ({
 export const selectIsGeneralAdmin = (state: AuthState) =>
   state.session?.adminScope === 'GENERAL';
 
+export const selectCanAccessAnalytics = (state: AuthState) =>
+  state.session?.groups.some(
+    (group) => group.trim().toLowerCase() === 'admin-global',
+  ) ?? false;
+
 export const selectCanAccessPanel = (state: AuthState) => {
   if (!state.session) return false;
   if (state.session.adminScope === 'GENERAL') return true;

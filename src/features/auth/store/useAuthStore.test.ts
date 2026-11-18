@@ -3,7 +3,11 @@ import { afterEach, describe, expect, test } from 'vitest';
 import { type AuthSession } from '../types';
 import { establishSession } from '../session/sessionManager';
 import { clearAuthTokens } from '../session/tokenVault';
-import { selectCanAccessPanel, useAuthStore } from './useAuthStore';
+import {
+  selectCanAccessAnalytics,
+  selectCanAccessPanel,
+  useAuthStore,
+} from './useAuthStore';
 
 const encode = (value: object) =>
   window
@@ -89,5 +93,21 @@ describe('selectCanAccessPanel', () => {
       adminScope: 'GENERAL',
     });
     expect(selectCanAccessPanel(useAuthStore.getState())).toBe(true);
+    expect(selectCanAccessAnalytics(useAuthStore.getState())).toBe(true);
+  });
+
+  test('reserva Analítica para el grupo admin-global', () => {
+    useAuthStore.setState({ session: moduleAdminSession, isHydrated: true });
+    expect(selectCanAccessAnalytics(useAuthStore.getState())).toBe(false);
+
+    useAuthStore.setState({
+      session: {
+        ...moduleAdminSession,
+        groups: ['  ADMIN-GLOBAL  '],
+        adminScope: 'GENERAL',
+      },
+      isHydrated: true,
+    });
+    expect(selectCanAccessAnalytics(useAuthStore.getState())).toBe(true);
   });
 });

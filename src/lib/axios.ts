@@ -23,6 +23,7 @@ export const authAxiosInstance = axios.create(httpClientConfig);
 
 interface RetryableRequestConfig extends InternalAxiosRequestConfig {
   _authRetry?: boolean;
+  _preserveSessionOnUnauthorized?: boolean;
 }
 
 const REFRESH_LEEWAY_MS = 30_000;
@@ -119,6 +120,14 @@ axiosInstance.interceptors.response.use(
       !originalRequest ||
       isPublicAuthRequest(originalRequest.url)
     ) {
+      return Promise.reject(error);
+    }
+
+    // Algunos endpoints protegidos actúan como proxy de otro servicio. En
+    // esos casos un 401 puede pertenecer al upstream, no a nuestra sesión.
+    // La renovación preventiva del request interceptor ya cubre el vencimiento
+    // normal del access token, por lo que no debemos cerrar una sesión válida.
+    if (originalRequest._preserveSessionOnUnauthorized) {
       return Promise.reject(error);
     }
 
