@@ -269,6 +269,52 @@ describe('auth runtime branches', () => {
     });
   });
 
+  test('un 401 del proxy de Analítica no renueva ni elimina la sesión', async () => {
+    const token = createToken({
+      sub: 'U-global',
+      exp: Math.floor(Date.now() / 1000) + 900,
+      groups: ['admin-global'],
+    });
+    establishSession({
+      access_token: token,
+      refresh_token: 'refresh-global',
+      token_type: 'Bearer',
+      expires_in: 900,
+    });
+
+    const refreshSpy = vi.spyOn(authAxiosInstance, 'post');
+    const retrySpy = vi.spyOn(axiosInstance, 'request');
+    const config = {
+      url: '/admin/analitica',
+      headers: { Authorization: `Bearer ${token}` },
+      _preserveSessionOnUnauthorized: true,
+    } as InternalAxiosRequestConfig & {
+      _preserveSessionOnUnauthorized: boolean;
+    };
+    const unauthorized = new AxiosError(
+      'Unauthorized',
+      'ERR_BAD_RESPONSE',
+      config,
+      undefined,
+      {
+        data: { detail: 'Token inválido o expirado' },
+        status: 401,
+        statusText: 'Unauthorized',
+        headers: {},
+        config,
+      },
+    );
+    const responseInterceptor = axiosInstance.interceptors.response.handlers?.[0];
+
+    await expect(responseInterceptor!.rejected!(unauthorized)).rejects.toBe(
+      unauthorized,
+    );
+    expect(refreshSpy).not.toHaveBeenCalled();
+    expect(retrySpy).not.toHaveBeenCalled();
+    expect(useAuthStore.getState().session?.userId).toBe('U-global');
+    expect(getAccessToken()).toBe(token);
+  });
+
   test('loginUser envía la petición de login y devuelve el payload', async () => {
     const postSpy = vi.spyOn(axiosInstance, 'post').mockResolvedValue({
       data: {

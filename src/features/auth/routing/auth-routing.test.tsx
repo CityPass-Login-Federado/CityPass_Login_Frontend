@@ -8,6 +8,7 @@ import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { useAuthStore } from '../store/useAuthStore';
 import { AuthenticatedRoute } from './AuthenticatedRoute';
 import { ProtectedRoute } from './ProtectedRoute';
+import { GlobalAdminRoute } from './GlobalAdminRoute';
 import { LoginPage } from '../pages/LoginPage';
 import { UnauthorizedPage } from '../pages/UnauthorizedPage';
 import { UserHomePage } from '../pages/UserHomePage';
@@ -158,6 +159,60 @@ describe('auth routing and boundaries', () => {
     );
 
     expect(screen.getByText('Panel')).toBeInTheDocument();
+  });
+
+  test('reserva la ruta de Analítica para admin-global', () => {
+    useAuthStore.setState({
+      session: {
+        userId: 'u1',
+        username: 'delegado',
+        module: 'reclamos',
+        groups: ['delegados'],
+        roles: [],
+        adminScope: 'MODULE',
+        expiresAt: Date.now() + 60_000,
+      },
+      isHydrated: true,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/panel/analitica']}>
+        <Routes>
+          <Route element={<GlobalAdminRoute />}>
+            <Route path="/panel/analitica" element={<div>Analítica</div>} />
+          </Route>
+          <Route path="/unauthorized" element={<div>Unauthorized page</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Unauthorized page')).toBeInTheDocument();
+  });
+
+  test('permite a admin-global abrir la ruta de Analítica', () => {
+    useAuthStore.setState({
+      session: {
+        userId: 'u-global',
+        username: 'admin-global',
+        groups: ['admin-global'],
+        roles: [],
+        adminScope: 'GENERAL',
+        expiresAt: Date.now() + 60_000,
+      },
+      isHydrated: true,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/panel/analitica']}>
+        <Routes>
+          <Route element={<GlobalAdminRoute />}>
+            <Route path="/panel/analitica" element={<div>Analítica</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Analítica')).toBeInTheDocument();
   });
 
   test('renderiza la página de login y la de acceso no autorizado', () => {

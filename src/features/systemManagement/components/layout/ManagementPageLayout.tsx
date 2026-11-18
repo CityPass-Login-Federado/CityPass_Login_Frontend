@@ -1,9 +1,7 @@
 import { type ReactNode } from 'react';
 
-import {
-  useAuthStore,
-} from '@/features/auth/store/useAuthStore';
 import { UserMenu } from '@/features/auth/layout/UserMenu';
+import { useAuthStore } from '@/features/auth/store/useAuthStore';
 
 import { ManagementSidebar } from './ManagementSidebar';
 
@@ -23,10 +21,10 @@ export const ManagementPageLayout = ({
   return (
     <div
       id="top"
-      className="flex min-h-screen flex-col bg-background md:flex-row"
+      className="flex h-dvh flex-col overflow-hidden bg-background md:flex-row"
     >
       <ManagementSidebar />
-      <div className="min-w-0 flex-1">
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
         <header className="flex h-16 items-center border-b bg-white px-4 sm:px-6 lg:px-8">
           <div>
             <p className="font-heading text-sm font-semibold">
@@ -39,7 +37,7 @@ export const ManagementPageLayout = ({
           <UserMenu />
         </header>
 
-        <main className="mx-auto max-w-[1440px] space-y-5 px-4 py-7 sm:px-6 lg:px-8">
+        <main className="mx-auto w-full max-w-[1440px] space-y-5 px-4 py-7 sm:px-6 lg:px-8">
           <div className="space-y-1">
             <h1 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">
               {title}

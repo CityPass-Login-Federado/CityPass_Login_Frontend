@@ -8,6 +8,7 @@ import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage';
 import { PasswordResetPage } from '@/features/auth/pages/PasswordResetPage';
 import { AuthenticatedRoute } from '@/features/auth/routing/AuthenticatedRoute';
 import { ProtectedRoute } from '@/features/auth/routing/ProtectedRoute';
+import { GlobalAdminRoute } from '@/features/auth/routing/GlobalAdminRoute';
 import { UnauthorizedPage } from '@/features/auth/pages/UnauthorizedPage';
 import { UserHomePage } from '@/features/auth/pages/UserHomePage';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
@@ -16,6 +17,7 @@ import { GroupsManagementPage } from '@/features/systemManagement/pages/GroupsMa
 import { UsersManagementPage } from '@/features/systemManagement/pages/UsersManagementPage';
 import { AuditManagementPage } from '@/features/systemManagement/pages/AuditManagementPage';
 import { AnomalyManagementPage } from '@/features/systemManagement/pages/AnomalyManagementPage';
+import { AnalyticsPage } from '@/features/analytics/pages/AnalyticsPage';
 import { queryClient } from '@/lib/queryClient';
 
 export const App = () => {
@@ -77,6 +79,16 @@ export const App = () => {
                 </AppErrorBoundary>
               }
             />
+            <Route element={<GlobalAdminRoute />}>
+              <Route
+                path="/panel/analitica"
+                element={
+                  <AppErrorBoundary>
+                    <AnalyticsPage />
+                  </AppErrorBoundary>
+                }
+              />
+            </Route>
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

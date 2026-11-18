@@ -107,6 +107,7 @@ src/
 | `/panel/groups` | gestión exclusiva de grupos y asignaciones |
 | `/panel/audit` | historial administrativo paginado y filtrable |
 | `/panel/anomalies` | revisión y aprobación de accesos bloqueados por anomalías |
+| `/panel/analitica` | tablero HTML de Analítica de Identidad para `admin-global` |
 | `/forgot-password` | solicitud pública de recuperación |
 | `/reset-password?token=…` | restablecimiento mediante enlace de recuperación |
 | `/reset-password` | cambio de contraseña para una sesión autenticada |
@@ -129,8 +130,13 @@ La autenticación y el panel consumen las rutas inglesas publicadas por el backe
 | `POST` | `/panel/group-memberships/bulk` | asignación masiva |
 | `GET` | `/panel/audit` | auditoría con filtros y paginación |
 | `GET` / `POST` | `/panel/anomaly-events`, `/panel/anomaly-events/{id}/approve` | revisión y aprobación de anomalías |
+| `GET` | `/admin/analitica` | proxy autenticado del tablero HTML de Analítica |
 
 Los listados admiten paginación y filtros. El alcance de módulo se deriva del token para delegados y se envía explícitamente cuando un administrador general opera sobre un módulo concreto.
+
+El tablero de Analítica se solicita con el cliente HTTP autenticado para adjuntar el access token humano. El HTML recibido se muestra sin modificaciones mediante `iframe.srcDoc`, con `sandbox="allow-scripts"` y sin `allow-same-origin`; el token no se incluye en la URL ni se entrega al contenido embebido.
+
+Un `401` devuelto por `/admin/analitica` no invalida la sesión local: esa ruta propaga el estado del servicio upstream y el rechazo puede corresponder a la firma o al issuer configurados entre ambientes. En desarrollo, el endpoint productivo de Analítica no acepta las claves RSA autogeneradas ni el issuer local; la integración completa debe probarse contra un ambiente de Analítica que confíe en el JWKS del IdP utilizado.
 
 ### Estados de cuenta y eventos de anomalía
 
@@ -151,7 +157,7 @@ El diseño fue trabajado en Figma según la trazabilidad de Jira, pero este repo
 
 ## Pruebas
 
-La suite verificada contiene **42 archivos y 195 pruebas**, incluidas pruebas de contrato HTTP, hooks, caché, routing, foco, teclado, viewport de 360 px y cinco verificaciones con axe. `vitest.config.ts` exige al menos 60 % en statements, branches, functions y lines.
+La suite verificada contiene **45 archivos y 208 pruebas**, incluidas pruebas de contrato HTTP, Analítica, layout, hooks, caché, routing, foco, teclado, viewport de 360 px y cinco verificaciones con axe. `vitest.config.ts` exige al menos 60 % en statements, branches, functions y lines.
 
 ## CI/CD
 
