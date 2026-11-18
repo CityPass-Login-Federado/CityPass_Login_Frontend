@@ -20,7 +20,7 @@ inputs:
     description: Actions run URL that published or deployed the artifact.
     required: true
   register-deployment:
-    description: Create a GitHub deployment record and mark the artifact active. Set false when only registering publication.
+    description: Create a GitHub deployment record for the artifact. The published artifact is marked active either way.
     required: false
     default: "true"
 runs:
@@ -92,20 +92,18 @@ runs:
             issue_url="$(gh issue create --repo "$repository" --title "$issue_title" --body-file "$issue_body" --label deployment:active --label service:frontend --label status:pending)"
           else
             printf '\n- Deployment status: `pending` (artifact published; Vercel has not been deployed by this workflow)\n' >> "$issue_body"
-            issue_url="$(gh issue create --repo "$repository" --title "$issue_title" --body-file "$issue_body" --label service:frontend --label status:pending)"
+            issue_url="$(gh issue create --repo "$repository" --title "$issue_title" --body-file "$issue_body" --label deployment:active --label service:frontend --label status:pending)"
           fi
           rm -f "$issue_body"
           issue_number="${issue_url##*/}"
         fi
         issue_url="${GITHUB_SERVER_URL}/${repository}/issues/${issue_number}"
 
+        gh issue edit "$issue_number" --repo "$repository" --add-label deployment:active --remove-label deployment:superseded
         if [[ "$REGISTER_DEPLOYMENT" == "true" ]]; then
-          gh issue edit "$issue_number" --repo "$repository" --add-label deployment:active --remove-label deployment:superseded
           gh issue comment "$issue_number" --repo "$repository" --body "Artifact ${ARTIFACT_TAG} was deployed to production-frontend at ${recorded_at} UTC. [Actions run](${DEPLOYMENT_RUN_URL}). Existing status labels were preserved."
-          active_issues="$(gh issue list --repo "$repository" --state open --label deployment:active --label service:frontend --json number,title --limit 100)"
-        else
-          active_issues='[]'
         fi
+        active_issues="$(gh issue list --repo "$repository" --state open --label deployment:active --label service:frontend --json number,title --limit 100)"
 
         while IFS= read -r previous_number; do
           [[ -z "$previous_number" || "$previous_number" == "$issue_number" ]] && continue
