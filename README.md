@@ -2,7 +2,7 @@
 
 Aplicación web del Squad 2 para autenticación y administración de identidades de CityPass+. Implementa login, recuperación y cambio de contraseña, custodia de tokens en memoria, renovación automática y una interfaz de gestión de personas, grupos, membresías, auditoría y eventos de anomalía.
 
-> Estado verificado: 15 de noviembre de 2026. Las rutas y los DTO del frontend están alineados con el contrato vigente de `CityPass_Login_Backend`.
+> Estado verificado: 18 de noviembre de 2026. Las rutas y los DTO del frontend están alineados con el contrato vigente de `CityPass_Login_Backend`.
 
 ## Stack exacto
 
@@ -22,7 +22,7 @@ Aplicación web del Squad 2 para autenticación y administración de identidades
 | Accesibilidad automatizada | jest-axe 11.x |
 | Runtime OCI | Nginx 1.27 Alpine, usuario no root |
 
-Los rangos provienen de `package.json`; no existe `package-lock.json`, de modo que una instalación nueva no fija versiones transitivas exactas.
+Los rangos provienen de `package.json`; `package-lock.json` está ignorado y no se versiona, de modo que una instalación nueva no fija versiones transitivas exactas.
 
 ## Inicio local
 
@@ -85,9 +85,23 @@ La organización es Feature-Driven:
 src/
 ├── components/ui/              # primitivas visuales compartidas
 ├── features/auth/              # login, refresh, logout, JWT y guards
+├── features/analytics/         # proxy HTML y tablero para admin-global
 ├── features/systemManagement/  # personas, grupos, auditoría y anomalías
 ├── lib/axios.ts                # interceptores y coordinación de refresh
 └── App.tsx                     # rutas y providers
+```
+
+```mermaid
+flowchart LR
+    USER[Persona usuaria o administradora] --> SPA[SPA React]
+    SPA --> AUTH[Feature auth<br/>sesión en memoria]
+    SPA --> PANEL[Feature systemManagement<br/>personas, grupos, auditoría y anomalías]
+    SPA --> ANALYTICS[Feature analytics<br/>tablero HTML]
+    AUTH --> HTTP[Axios + refresh coordinado]
+    PANEL --> HTTP
+    ANALYTICS --> HTTP
+    HTTP -->|REST + Bearer JWT| LOGIN[Backend Login Federado]
+    LOGIN -->|proxy /admin/analitica| DATA[Backend de Analítica - Grupo 8]
 ```
 
 - Access y refresh token se guardan únicamente en memoria; recargar la página obliga a iniciar sesión otra vez.
@@ -157,7 +171,7 @@ El diseño fue trabajado en Figma según la trazabilidad de Jira, pero este repo
 
 ## Pruebas
 
-La suite verificada contiene **45 archivos y 208 pruebas**, incluidas pruebas de contrato HTTP, Analítica, layout, hooks, caché, routing, foco, teclado, viewport de 360 px y cinco verificaciones con axe. `vitest.config.ts` exige al menos 60 % en statements, branches, functions y lines.
+La suite definida contiene **45 archivos y 208 pruebas**, incluidas pruebas de contrato HTTP, Analítica, layout, hooks, caché, routing, foco, teclado, viewport de 360 px y cinco verificaciones con axe. `vitest.config.ts` exige al menos 60 % en statements, branches, functions y lines.
 
 ## CI/CD
 
@@ -175,6 +189,7 @@ Con el backend seed, use `delegado-rec` / `changeit123` y `VITE_CLIENT_ID=citypa
 
 ## Documentación
 
+- `docs/README.md` — índice técnico de la TASK-171.
 - `docs/guides/frontend-architecture.md`
 - `docs/guides/create-new-feature.md`
 - `docs/guides/style-guide.md`
