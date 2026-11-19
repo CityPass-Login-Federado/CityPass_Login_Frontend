@@ -64,6 +64,7 @@ El host publica `5173` y Nginx escucha en `8080` dentro del contenedor. `FRONTEN
 | `npm test` | suite Vitest una vez |
 | `npm run test:watch` | Vitest interactivo |
 | `npm run test:coverage` | cobertura V8, umbral 60 % en las cuatro métricas |
+| `npm run test:e2e` | E2E de navegador con Playwright (requiere credenciales de prueba) |
 | `npm run build` | typecheck y bundle de producción |
 | `npm run preview` | preview del bundle |
 
@@ -162,6 +163,7 @@ La suite verificada contiene **45 archivos y 208 pruebas**, incluidas pruebas de
 ## CI/CD
 
 - `pr-checks.yml`: CI y smoke test Docker Compose en PRs a `main` y `develop`.
+- `e2e-tests.yml`: login E2E con Playwright; se ejecuta en PR checks y manualmente desde Actions, donde se puede elegir la rama. Configurar los secrets `E2E_USERNAME` y `E2E_PASSWORD` con una cuenta del ambiente de pruebas. El frontend local usa el proxy de Vite hacia `https://api.citypass-login.pp.ua`. En PRs desde forks, GitHub no expone secrets y el job se omite.
 - `CI.yml`: lint, cobertura, build, SonarCloud, Gitleaks y Trivy.
 - `push-checks.yml`: CI seguido de CD en pushes a `main` y `develop`.
 - `CD.yml`: artefacto inmutable de Vercel e imagen publicada en GHCR.
