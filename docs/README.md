@@ -9,6 +9,8 @@
   dependencias, seguridad de sesión, panel, Analítica, diagramas y despliegue.
 - [Crear una nueva feature](guides/create-new-feature.md): recorrido de implementación.
 - [Guía de estilo](guides/style-guide.md): convenciones de código.
+- [Integración con el dashboard de Analítica](integrations/analytics-dashboard.md):
+  cronología, flujo autenticado, cambios frontend, incidentes y validación.
 - [ADR-F001](adr/ADR-F001-react-core.md): React 18.
 - [ADR-F002](adr/ADR-F002-vite-build-tool.md): Vite.
 - [ADR-F003](adr/ADR-F003-tailwind-shadcn.md): Tailwind y shadcn/ui.
