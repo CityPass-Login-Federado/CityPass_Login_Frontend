@@ -1,11 +1,23 @@
 # ADR-F001: React 18 como librería principal de interfaz de usuario
 
+## Quiénes
+
+| Nombre | Rol |
+|---|---|
+| Ignacio Opatich | Frontend |
+| Delfina Francisco Frate | Documentación y revisión |
+
 ## Estado
 
-Accepted — revisado el 14 de noviembre de 2026.
+Accepted — revisado el 19 de noviembre de 2026.
 
 ## Contexto
-El módulo de Login Federado es la puerta de entrada a la plataforma CityPass+. El frontend implementa autenticación, pantallas de contraseña y un panel protegido. Las pantallas de contraseña y parte del panel todavía no tienen un contrato backend compatible, por lo que su presencia en React no implica integración end-to-end.
+El módulo de Login Federado es la puerta de entrada a la plataforma CityPass+. El
+frontend implementa autenticación, recupero y cambio de contraseña, un panel
+protegido para personas, grupos, auditoría y anomalías, y la vista exclusiva de
+Analítica. Estas superficies consumen los contratos vigentes del backend; las
+integraciones externas dependen además de que los ambientes compartan issuer,
+JWKS y URLs compatibles.
 
 Necesitamos una Single Page Application (SPA) mantenible, con una experiencia de usuario fluida y un ecosistema que permita integrar enrutamiento, consumo de APIs, estado cliente y estado de servidor.
 
@@ -38,3 +50,11 @@ Elegimos React por su modelo de componentes funcionales, su ecosistema y la expe
 - Los tokens viven solo en memoria mediante `tokenVault`; una recarga completa exige autenticarse otra vez.
 - `AuthenticatedRoute` protege `/home` y `ProtectedRoute` exige permisos adicionales para `/panel/**`.
 - Las actualizaciones mayores de React y de las librerías que integran su ecosistema deben evaluarse explícitamente para evitar incompatibilidades.
+
+## Referencias
+
+- [React 18](https://react.dev/)
+- [React Router](https://reactrouter.com/)
+- [TanStack Query](https://tanstack.com/query/latest)
+- [Zustand](https://zustand.docs.pmnd.rs/)
+- [Arquitectura del frontend](../guides/frontend-architecture.md)

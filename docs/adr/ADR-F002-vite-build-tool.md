@@ -1,8 +1,15 @@
 # ADR-F002: Vite como entorno de desarrollo y empaquetado
 
+## Quiénes
+
+| Nombre | Rol |
+|---|---|
+| Ignacio Opatich | Frontend |
+| Delfina Francisco Frate | Documentación y revisión |
+
 ## Estado
 
-Accepted — revisado el 14 de noviembre de 2026.
+Accepted — revisado el 19 de noviembre de 2026.
 
 ## Contexto
 Necesitamos una herramienta para ejecutar y compilar la aplicación React con TypeScript, procesar sus recursos estáticos y generar un artefacto de producción que no requiera un servidor Node.js. La salida debe poder servirse mediante Nginx dentro de un contenedor y también desde una plataforma de alojamiento estático.
@@ -40,3 +47,10 @@ Elegimos Vite 5 porque ofrece una experiencia de desarrollo rápida, integració
 - El resultado de `npm run build` es el artefacto estático utilizado por los distintos destinos de despliegue.
 - `VITE_API_BASE_URL` y `VITE_CLIENT_ID` son valores públicos incorporados durante el build; nunca deben contener secretos.
 - El repositorio no incluye `package-lock.json`: `npm install` no garantiza hoy un árbol transitivo idéntico entre ambientes. Incorporar y usar un lockfile mejoraría la reproducibilidad.
+
+## Referencias
+
+- [Vite](https://vite.dev/)
+- [TypeScript](https://www.typescriptlang.org/docs/)
+- [Vite: variables de entorno](https://vite.dev/guide/env-and-mode)
+- [Despliegue de una aplicación estática](../guides/frontend-architecture.md#12-build-ejecución-y-despliegue)

@@ -2,6 +2,9 @@
 
 Esta guía describe cómo está organizado el frontend de CityPass+ Login Federado, cómo circulan los datos y dónde buscar o agregar cada tipo de comportamiento. Su objetivo es servir como mapa técnico del estado actual del proyecto.
 
+**Fecha de revisión:** 19 de noviembre de 2026
+**Entrega:** TASK-171 — Actualización de Documentación Técnica y Diagramas UML Finales
+
 ## 1. Vista general
 
 La aplicación es una SPA desarrollada con React 18, TypeScript y Vite. El código de negocio se organiza por funcionalidades y se apoya en una capa compartida pequeña:
@@ -24,6 +27,9 @@ src/
 │   │   ├── store/             # Sesión compartida con Zustand
 │   │   ├── types/             # DTO y claims
 │   │   └── utils/             # JWT, validación y errores
+│   ├── analytics/             # Proxy HTML y tablero exclusivo de admin-global
+│   │   ├── api/               # GET /admin/analitica
+│   │   └── pages/             # Estados y render seguro mediante iframe.srcDoc
 │   └── systemManagement/      # Administración, auditoría y anomalías
 │       ├── components/
 │       │   ├── anomalies/     # Revisión y aprobación de anomalías
@@ -61,6 +67,36 @@ Las responsabilidades se separan de esta manera:
 | Rutas y navegación | React Router |
 | Estilos y componentes base | Tailwind CSS y shadcn/ui |
 
+### Diagrama de contenedores y dependencias
+
+```mermaid
+flowchart LR
+    PERSON[Persona usuaria o administradora]
+
+    subgraph BROWSER[Navegador]
+        ROUTER[React Router<br/>rutas y guards]
+        AUTH[Feature auth<br/>Zustand + tokenVault]
+        PANEL[Feature systemManagement<br/>TanStack Query]
+        ANALYTICS[Feature analytics<br/>TanStack Query + iframe sandbox]
+        AXIOS[Axios<br/>Bearer + refresh coordinado]
+        ROUTER --> AUTH
+        ROUTER --> PANEL
+        ROUTER --> ANALYTICS
+        AUTH --> AXIOS
+        PANEL --> AXIOS
+        ANALYTICS --> AXIOS
+    end
+
+    LOGIN[Backend Login Federado]
+    DATA[Backend de Analítica - Grupo 8]
+
+    PERSON --> ROUTER
+    AXIOS -->|HTTPS / JSON o HTML| LOGIN
+    LOGIN -->|proxy autenticado| DATA
+```
+
+El frontend nunca llama directamente a Analítica: usa el proxy del backend de Login para conservar autorización, timeouts y manejo uniforme de errores.
+
 ## 2. Puntos de entrada y navegación
 
 ### `src/main.tsx`
@@ -97,6 +133,7 @@ Las rutas actuales son:
 | `/panel/groups` | Protegido | `GroupsManagementPage` |
 | `/panel/audit` | Protegido | `AuditManagementPage` |
 | `/panel/anomalies` | Protegido | `AnomalyManagementPage` |
+| `/panel/analitica` | Solo `admin-global` | `AnalyticsPage` mediante `GlobalAdminRoute` |
 
 Cualquier ruta desconocida redirige a `/login`. Para agregar una pantalla nueva se debe registrar su ruta en `App.tsx`; actualmente no existe un archivo `AppRouter.tsx` separado.
 
@@ -233,7 +270,52 @@ El cliente consume el contrato inglés publicado por Spring Boot:
 
 Los listados aceptan filtros, página, tamaño y módulo según el alcance. `PanelPerson` diferencia la baja LDAP (`disabled`) del lockout temporal (`locked`, `lockoutUntil`). Las pruebas de `panelApi` verifican método, ruta, parámetros y cuerpo de las operaciones consumidas.
 
-## 5. Flujo de datos del panel
+## 5. Feature de Analítica
+
+La integración vive en `src/features/analytics/` y mantiene una frontera deliberadamente pequeña:
+
+```text
+analytics/
+├── api/
+│   ├── analyticsApi.ts       # GET /admin/analitica como text/html
+│   └── analyticsApi.test.ts
+└── pages/
+    ├── AnalyticsPage.tsx     # carga, error, reintento e iframe
+    └── AnalyticsPage.test.tsx
+```
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor A as Administrador global
+    participant R as GlobalAdminRoute
+    participant P as AnalyticsPage
+    participant Q as TanStack Query
+    participant X as axiosInstance
+    participant L as Backend Login Federado
+    participant D as Backend Analítica Grupo 8
+
+    A->>R: Navega a /panel/analitica
+    R->>R: Verificar grupo admin-global
+    R->>P: Autorizar pantalla
+    P->>Q: fetchAnalyticsHtml()
+    Q->>X: GET /admin/analitica<br/>responseType=text
+    X->>L: Bearer access token humano
+    L->>D: GET /embed/identidad<br/>mismo Bearer token
+    D-->>L: HTML autocontenido
+    L-->>X: HTML + headers permitidos
+    X-->>Q: string HTML
+    Q-->>P: data
+    P-->>A: iframe srcDoc<br/>sandbox=allow-scripts
+```
+
+- `GlobalAdminRoute` oculta la ruta a cualquier sesión que no pertenezca a `admin-global`; el backend vuelve a autorizar el request.
+- La consulta desactiva reintentos automáticos, caché persistente y refetch por foco.
+- `_preserveSessionOnUnauthorized` evita cerrar una sesión válida cuando el `401` proviene del upstream de Analítica.
+- El HTML se muestra mediante `srcDoc` con `sandbox="allow-scripts"`, sin `allow-same-origin`; el token permanece fuera de la URL y del documento embebido.
+- La pantalla diferencia timeout, `401`, `403`, `502` y `503`, y permite reintento manual.
+
+## 6. Flujo de datos del panel
 
 ### Consultas
 
@@ -265,7 +347,7 @@ Después de crear o modificar datos, los hooks invalidan las consultas relaciona
 
 La lógica está centralizada en `cacheReconciliation.ts`. Si se agrega una entidad nueva, también se deben definir sus query keys y su estrategia de invalidación.
 
-## 6. Formularios y validación
+## 7. Formularios y validación
 
 Los formularios siguen este reparto:
 
@@ -277,7 +359,7 @@ Los formularios siguen este reparto:
 
 Los esquemas del panel están en `systemManagement/schemas/`. Los esquemas de login y contraseña están en `auth/utils/`.
 
-## 7. Componentes compartidos y estilos
+## 8. Componentes compartidos y estilos
 
 `src/components/ui/` contiene los componentes base incorporados a partir de shadcn/ui, como botones, inputs, diálogos, tablas y selects. Estos archivos forman parte del proyecto y pueden modificarse.
 
@@ -301,7 +383,7 @@ Las decisiones responsive y de accesibilidad verificadas son:
 - reducción global de movimiento con `prefers-reduced-motion` y utilidades `motion-reduce`;
 - chequeos axe de login, usuarios, grupos, auditoría y anomalías.
 
-## 8. Dónde realizar cada cambio
+## 9. Dónde realizar cada cambio
 
 | Si necesitás... | Empezá por... | Revisá también... |
 |---|---|---|
@@ -315,6 +397,7 @@ Las decisiones responsive y de accesibilidad verificadas son:
 | Cambiar la lista de grupos | `GroupsSection.tsx` | `GroupsTable.tsx`, `GroupFilters.tsx` y `useGroups.ts` |
 | Cambiar auditoría | `AuditSection.tsx` | `AuditTable.tsx`, `AuditFilters.tsx` y `useAudit.ts` |
 | Cambiar anomalías | `AnomalySection.tsx` | `AnomalyTable.tsx`, `AnomalyFilters.tsx` y `useAnomalyEvents.ts` |
+| Cambiar el tablero de Analítica | `analytics/pages/AnalyticsPage.tsx` | `analytics/api/analyticsApi.ts`, `GlobalAdminRoute.tsx` y pruebas |
 | Cambiar un formulario del panel | componente `*Dialog.tsx` | `systemManagementSchemas.ts` y hook de mutación |
 | Agregar estado remoto | hook de la feature | `queryKeys.ts` y `cacheReconciliation.ts` |
 | Agregar estado compartido del cliente | store de la feature | confirmar que no sea estado remoto ni local |
@@ -322,7 +405,7 @@ Las decisiones responsive y de accesibilidad verificadas son:
 | Cambiar URL o comportamiento HTTP | `src/lib/axios.ts` | `.env`, Vite, Nginx y pruebas de autenticación |
 | Cambiar el empaquetado | `vite.config.ts` o `Dockerfile` | `nginx.conf`, `vercel.json` y workflows |
 
-## 9. Cómo agregar un caso de uso
+## 10. Cómo agregar un caso de uso
 
 Para incorporar una operación nueva dentro de una feature existente:
 
@@ -337,11 +420,11 @@ Para incorporar una operación nueva dentro de una feature existente:
 
 Si el caso de uso pertenece a un dominio nuevo, se crea una carpeta dentro de `src/features/` y se agregan únicamente las subcarpetas que ese dominio necesite.
 
-## 10. Pruebas
+## 11. Pruebas
 
 Vitest y React Testing Library cubren componentes, hooks y utilidades. Los tests se colocan junto al código probado con el sufijo `.test.ts` o `.test.tsx`.
 
-La suite verificada el 15 de noviembre de 2026 contiene 42 archivos y 195 pruebas. `vitest.config.ts` exige 60 % en statements, branches, functions y lines; el repositorio no incluye un reporte de cobertura versionado.
+La suite definida al 18 de noviembre de 2026 contiene 45 archivos y 208 pruebas. `vitest.config.ts` exige 60 % en statements, branches, functions y lines; el repositorio no incluye un reporte de cobertura versionado.
 
 Las pruebas suelen dividirse en:
 
@@ -365,7 +448,7 @@ npm run test:coverage
 npm run build
 ```
 
-## 11. Build, ejecución y despliegue
+## 12. Build, ejecución y despliegue
 
 ### Desarrollo local
 
@@ -399,7 +482,7 @@ Los workflows de `.github/workflows/` realizan:
 
 El smoke test comprueba que Nginx entrega HTML; no levanta el backend ni valida login o panel end-to-end.
 
-## 12. Reglas que conviene preservar
+## 13. Reglas que conviene preservar
 
 - Mantener las reglas de negocio dentro de su feature.
 - No llamar a Axios directamente desde componentes.
@@ -411,7 +494,7 @@ El smoke test comprueba que Nginx entrega HTML; no levanta el backend ni valida 
 - Mantener juntos el archivo implementado y sus pruebas.
 - Agregar a `components/ui/` solamente piezas visuales sin conocimiento del negocio.
 
-## 13. Documentación relacionada
+## 14. Documentación relacionada
 
 - `docs/adr/`: decisiones originales de React, Vite, Tailwind/shadcn y organización por features.
 - `docs/guides/create-new-feature.md`: checklist orientado a crear una pantalla o feature.

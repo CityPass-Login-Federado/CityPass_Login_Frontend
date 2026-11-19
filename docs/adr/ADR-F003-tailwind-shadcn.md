@@ -1,8 +1,15 @@
 # ADR-F003: Tailwind CSS y shadcn/ui para el sistema de diseño
 
+## Quiénes
+
+| Nombre | Rol |
+|---|---|
+| Ignacio Opatich | Frontend |
+| Delfina Francisco Frate | Documentación y revisión |
+
 ## Estado
 
-Accepted — revisado el 14 de noviembre de 2026.
+Accepted — revisado el 19 de noviembre de 2026.
 
 ## Contexto
 La aplicación incluye flujos públicos de autenticación y pantallas protegidas de gestión. Todas ellas necesitan una interfaz consistente, responsiva y mantenible, con componentes reutilizables y una base adecuada para implementar accesibilidad sin duplicar estilos.
@@ -39,3 +46,11 @@ Elegimos Tailwind CSS 3.4 y componentes locales basados en shadcn/ui/Radix para 
 - Los componentes reutilizables de interfaz viven en `src/components/ui/` y forman parte del código mantenido por el equipo.
 - `AppErrorBoundary` y `sonner` resuelven errores inesperados y notificaciones del panel; no reemplazan los estados de error de cada sección.
 - El uso de primitivas accesibles no reemplaza la validación de etiquetas, navegación por teclado, foco, contraste y mensajes de error en cada flujo.
+
+## Referencias
+
+- [Tailwind CSS](https://tailwindcss.com/docs)
+- [shadcn/ui](https://ui.shadcn.com/docs)
+- [Radix Primitives: accessibility](https://www.radix-ui.com/primitives/docs/overview/accessibility)
+- [WCAG 2.2](https://www.w3.org/TR/WCAG22/)
+- [Guía de estilo](../guides/style-guide.md)

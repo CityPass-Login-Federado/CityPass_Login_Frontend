@@ -1,11 +1,22 @@
 # ADR-F004: Arquitectura Feature-Driven para el frontend
 
+## Quiénes
+
+| Nombre | Rol |
+|---|---|
+| Ignacio Opatich | Frontend |
+| Delfina Francisco Frate | Documentación y revisión |
+
 ## Estado
 
-Accepted — revisado el 14 de noviembre de 2026.
+Accepted — revisado el 19 de noviembre de 2026.
 
 ## Contexto
-El frontend reúne dos dominios principales: autenticación (`auth`) y administración de usuarios y grupos (`systemManagement`). Cada dominio contiene componentes, acceso a APIs, hooks, esquemas, tipos y utilidades que evolucionan de manera relacionada.
+El frontend reúne tres dominios: autenticación (`auth`), administración
+(`systemManagement`) y consulta del tablero externo (`analytics`). Cada dominio
+contiene las piezas que evolucionan de manera relacionada. Analítica se mantiene
+pequeña porque el backend de Login actúa como proxy y el frontend solamente
+autoriza la ruta, obtiene el HTML y lo presenta dentro de un iframe aislado.
 
 Necesitamos una estructura que mantenga próximas esas piezas, evite carpetas globales organizadas únicamente por tipo técnico y establezca un lugar claro para la infraestructura y los componentes compartidos.
 
@@ -19,7 +30,7 @@ Necesitamos una estructura que mantenga próximas esas piezas, evite carpetas gl
 | Tradicional en proyectos pequeños | Difícil eliminar o extraer una funcionalidad completa |
 
 ### Opción B: Arquitectura Feature-Driven (Agrupación por dominio) (Elegida)
-*(Ej: Agrupar por `auth` y `systemManagement`)*
+*(Ej: Agrupar por `auth`, `systemManagement` y `analytics`)*
 | Pros | Contras |
 |------|---------|
 | Alta cohesión: todo lo relacionado a "login" vive en la misma carpeta | Requiere disciplina para no cruzar dependencias entre features |
@@ -36,7 +47,16 @@ Esta decisión no implica que las features sean micro-frontends independientes. 
 - El código de negocio se organizará dentro de `src/features/`.
 - `auth` usa `api`, `forms`, `hooks`, `layout`, `pages`, `routing`, `session`, `store`, `types` y `utils`.
 - `systemManagement` usa `api`, `components`, `hooks`, `pages`, `schemas`, `types` y `utils`.
+- `analytics` usa `api`, `hooks` y `pages`; depende de la sesión de `auth`
+  y no accede directamente al backend del Grupo 8.
 - Los componentes visuales reutilizables viven en `src/components/ui/` y la infraestructura compartida, como Axios y TanStack Query, en `src/lib/`.
 - Los tests unitarios y de componentes con Vitest se ubican junto al archivo o área que prueban.
 - Zustand se limita al estado compartido de la sesión, mientras que TanStack Query administra el estado obtenido del servidor.
 - Las dependencias entre features deben mantenerse explícitas y justificadas; la organización por dominio no garantiza aislamiento automático.
+
+## Referencias
+
+- [Feature-Sliced Design: public API y aislamiento](https://feature-sliced.design/docs/reference/public-api)
+- [TanStack Query](https://tanstack.com/query/latest)
+- [Arquitectura del frontend](../guides/frontend-architecture.md)
+- [Guía para crear una feature](../guides/create-new-feature.md)
